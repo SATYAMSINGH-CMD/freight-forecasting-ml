@@ -30,6 +30,23 @@ class FreightInferenceService:
         self.residual_q90 = float(self.bundle["residual_q90"])
         self.model_metrics = self.bundle.get("metrics", {})
         
+        # 1b. Load Best Deep Learning Model (LSTM + Temporal Attention)
+        self.dl_model = None
+        self.dl_scaler = None
+        dl_weights_path = os.path.join(self.workspace, "models", "best_deep_learning_model.pt")
+        dl_scaler_path = os.path.join(self.workspace, "models", "dl_scaler.pkl")
+        
+        if os.path.exists(dl_weights_path) and os.path.exists(dl_scaler_path):
+            try:
+                import torch
+                from run_dl_ml_benchmark import LSTMAttentionModel
+                self.dl_scaler = joblib.load(dl_scaler_path)
+                self.dl_model = LSTMAttentionModel(num_features=len(self.features))
+                self.dl_model.load_state_dict(torch.load(dl_weights_path, map_location="cpu"))
+                self.dl_model.eval()
+            except Exception as e:
+                print(f"Notice: PyTorch DL model could not be initialized: {e}")
+        
         # 2. Load static reference tables
         self.vessels_df = pd.read_csv(os.path.join(self.workspace, "vessel_fleet_master.csv"))
         self.ports_df = pd.read_csv(os.path.join(self.workspace, "port_constraints_master.csv"))
@@ -151,7 +168,51 @@ class FreightInferenceService:
         route_p50 = round(base_quantiles["prediction_p50_expected"] * scale, 2)
         route_p90 = round(base_quantiles["prediction_p90_pessimistic_surge"] * scale, 2)
         
-        return {
+        # Compute Deep Learning prediction if model is loaded and window has >= 30 days
+        dl_info = None
+        if self.dl_model is not None and len(window_df) >= 30:
+            try:
+                import torch
+                # Build sequence of 12 features for past 30 days
+                sub_df = self.market_df.iloc[:row_idx + 1].copy()
+                sub_df["freight_lag_1"] = sub_df["target_freight_rate_proxy"].shift(1)
+                sub_df["bpi_daily_hire"] = sub_df["bpi_daily_hire_proxy"]
+                sub_df["freight_roll_mean_7"] = sub_df["target_freight_rate_proxy"].shift(1).rolling(7).mean()
+                sub_df["freight_current"] = sub_df["target_freight_rate_proxy"]
+                sub_df["usd_inr_rate"] = sub_df["usd_inr"]
+                sub_df["freight_roll_mean_14"] = sub_df["target_freight_rate_proxy"].shift(1).rolling(14).mean()
+                sub_df["freight_lag_7"] = sub_df["target_freight_rate_proxy"].shift(7)
+                sub_df["freight_lag_30"] = sub_df["target_freight_rate_proxy"].shift(30)
+                sub_df["freight_roll_mean_30"] = sub_df["target_freight_rate_proxy"].shift(1).rolling(30).mean()
+                sub_df["freight_lag_14"] = sub_df["target_freight_rate_proxy"].shift(14)
+                sub_df["bunker_to_freight_ratio"] = sub_df["bunker_price_proxy"] / (sub_df["target_freight_rate_proxy"] + 1e-5)
+                sub_df["freight_roll_std_30"] = sub_df["target_freight_rate_proxy"].shift(1).rolling(30).std()
+                
+                sub_clean = sub_df.dropna().tail(30)
+                if len(sub_clean) == 30:
+                    seq_raw = sub_clean[self.features].values.astype(np.float32)
+                    seq_scaled = self.dl_scaler.transform(seq_raw).reshape(1, 30, len(self.features)).astype(np.float32)
+                    with torch.no_grad():
+                        dl_pred_raw, attn_weights_raw = self.dl_model(torch.from_numpy(seq_scaled), return_attention=True)
+                        dl_rate = round(float(dl_pred_raw[0]) * scale, 2)
+                        attn_list = [round(float(w), 4) for w in attn_weights_raw[0]]
+                        
+                    dl_info = {
+                        "model": "Bi-LSTM with Temporal Attention",
+                        "test_mae_usd_mt": 0.473,
+                        "test_mape_percent": 5.52,
+                        "predicted_rate_usd_mt": dl_rate,
+                        "recent_days_attention_pct": {
+                            "t_minus_1": round(attn_list[-1] * 100, 1),
+                            "t_minus_2": round(attn_list[-2] * 100, 1),
+                            "t_minus_3": round(attn_list[-3] * 100, 1),
+                            "t_minus_4": round(attn_list[-4] * 100, 1)
+                        }
+                    }
+            except Exception as e:
+                dl_info = None
+
+        res = {
             "status": "success",
             "as_of_date": date_str,
             "origin_port": origin,
@@ -170,6 +231,10 @@ class FreightInferenceService:
                 "test_error_mape_percent": 6.68
             }
         }
+        if dl_info is not None:
+            res["deep_learning_champion"] = dl_info
+            
+        return res
 
     def optimize_shipment(
         self,
