@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Intelligent Freight Forecasting & Vessel Charter Optimization Architecture</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 4250px;
+      height: 2200px;
+      background: #090d16;
+      color: #e2e8f0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 28px 36px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Background Grid Pattern */
+    .bg-grid {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        radial-gradient(circle at 1px 1px, rgba(255,255,255,0.045) 1px, transparent 0);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .ambient-glow-1 {
+      position: absolute;
+      top: 5%;
+      left: 10%;
+      width: 1100px;
+      height: 1100px;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .ambient-glow-2 {
+      position: absolute;
+      bottom: 5%;
+      right: 15%;
+      width: 1200px;
+      height: 1200px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .ambient-glow-3 {
+      position: absolute;
+      top: 30%;
+      left: 45%;
+      width: 1000px;
+      height: 1000px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* SVG Connectors Overlay */
+    #connector-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Header Bar */
+    .header-bar {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.88));
+      border: 1.5px solid rgba(255, 255, 255, 0.14);
+      border-radius: 18px;
+      padding: 18px 32px;
+      margin-bottom: 22px;
+      box-shadow: 0 20px 45px -15px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(16px);
+    }
+
+    .header-title-group h1 {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff 20%, #cbd5e1 60%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .header-title-group .sub {
+      font-size: 14.5px;
+      color: #94a3b8;
+      font-weight: 500;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .badge-sih {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #0f172a;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+    }
+
+    .badge-role {
+      background: rgba(59, 130, 246, 0.18);
+      border: 1px solid rgba(59, 130, 246, 0.45);
+      color: #60a5fa;
+      font-weight: 700;
+      font-size: 12.5px;
+      padding: 5px 14px;
+      border-radius: 999px;
+    }
+
+    .badge-target {
+      background: rgba(16, 185, 129, 0.18);
+      border: 1px solid rgba(16, 185, 129, 0.45);
+      color: #34d399;
+      font-weight: 600;
+      font-size: 12.5px;
+      padding: 5px 14px;
+      border-radius: 999px;
+    }
+
+    .header-metrics {
+      display: flex;
+      gap: 20px;
+    }
+
+    .metric-chip {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 11px;
+      padding: 9px 16px;
+      text-align: right;
+    }
+
+    .metric-chip .val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .metric-chip .lbl {
+      font-size: 10.5px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+
+    /* Main Grid Layout - 7 Columns Side by Side */
+    .flowchart-container {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 460px 500px 550px 530px 530px 580px 730px;
+      column-gap: 28px;
+      height: calc(100% - 145px);
+    }
+
+    /* Column Base */
+    .column-lane {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      height: 100%;
+    }
+
+    /* Lane Header */
+    .lane-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-radius: 13px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .lane-header.theme-blue {
+      background: linear-gradient(135deg, rgba(30, 58, 138, 0.85), rgba(29, 78, 216, 0.45));
+      border: 1.5px solid rgba(59, 130, 246, 0.5);
+      color: #bfdbfe;
+    }
+
+    .lane-header.theme-purple {
+      background: linear-gradient(135deg, rgba(76, 29, 149, 0.85), rgba(109, 40, 217, 0.45));
+      border: 1.5px solid rgba(139, 92, 246, 0.5);
+      color: #ddd6fe;
+    }
+
+    .lane-header.theme-amber {
+      background: linear-gradient(135deg, rgba(120, 53, 15, 0.85), rgba(180, 83, 9, 0.45));
+      border: 1.5px solid rgba(245, 158, 11, 0.5);
+      color: #fde68a;
+    }
+
+    .lane-header.theme-rose {
+      background: linear-gradient(135deg, rgba(136, 19, 55, 0.85), rgba(190, 18, 60, 0.45));
+      border: 1.5px solid rgba(244, 63, 94, 0.5);
+      color: #fecdd3;
+    }
+
+    .lane-header.theme-emerald {
+      background: linear-gradient(135deg, rgba(6, 78, 59, 0.85), rgba(4, 120, 87, 0.45));
+      border: 1.5px solid rgba(16, 185, 129, 0.5);
+      color: #a7f3d0;
+    }
+
+    .lane-header.theme-cyan {
+      background: linear-gradient(135deg, rgba(22, 78, 99, 0.85), rgba(14, 116, 144, 0.45));
+      border: 1.5px solid rgba(6, 182, 212, 0.5);
+      color: #a5f3fc;
+    }
+
+    .lane-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.4);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      font-weight: 800;
+    }
+
+    /* Cards */
+    .arch-card {
+      background: rgba(15, 23, 42, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      border-radius: 14px;
+      padding: 14px 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(12px);
+      position: relative;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .tag {
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 2.5px 7px;
+      border-radius: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tag-blue { background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .tag-purple { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4); }
+    .tag-amber { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .tag-rose { background: rgba(244, 63, 94, 0.2); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.4); }
+    .tag-emerald { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .tag-cyan { background: rgba(6, 182, 212, 0.2); color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.4); }
+
+    /* Bullet details */
+    .data-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 11.5px;
+      color: #cbd5e1;
+    }
+
+    .data-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      line-height: 1.42;
+    }
+
+    .bullet-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+
+    .dot-blue { background: #60a5fa; box-shadow: 0 0 8px #60a5fa; }
+    .dot-purple { background: #a78bfa; box-shadow: 0 0 8px #a78bfa; }
+    .dot-amber { background: #fbbf24; box-shadow: 0 0 8px #fbbf24; }
+    .dot-rose { background: #fb7185; box-shadow: 0 0 8px #fb7185; }
+    .dot-emerald { background: #34d399; box-shadow: 0 0 8px #34d399; }
+    .dot-cyan { background: #22d3ee; box-shadow: 0 0 8px #22d3ee; }
+
+    .code-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #38bdf8;
+      font-weight: 600;
+    }
+
+    .formula-box {
+      margin-top: 8px;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-left: 3px solid #38bdf8;
+      border-radius: 7px;
+      padding: 7px 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      color: #bae6fd;
+      line-height: 1.4;
+    }
+
+    .formula-box.amber-accent { border-left-color: #f59e0b; color: #fef08a; }
+    .formula-box.emerald-accent { border-left-color: #10b981; color: #a7f3d0; }
+    .formula-box.rose-accent { border-left-color: #f43f5e; color: #fecdd3; }
+    .formula-box.purple-accent { border-left-color: #a855f7; color: #e9d5ff; }
+
+    /* Tables */
+    .mini-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+      font-size: 10.5px;
+    }
+
+    .mini-table th {
+      text-align: left;
+      padding: 4px 5px;
+      color: #94a3b8;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 9px;
+    }
+
+    .mini-table td {
+      padding: 4px 5px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: #e2e8f0;
+    }
+
+    .status-badge {
+      display: inline-block;
+      font-size: 9px;
+      padding: 1.5px 5px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .status-ok { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .status-alert { background: rgba(244, 63, 94, 0.2); color: #fb7185; }
+    .status-warn { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+
+    /* Highlight Card */
+    .highlight-card {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.94), rgba(15, 23, 42, 0.98));
+      border: 1.5px solid rgba(56, 189, 248, 0.45);
+      box-shadow: 0 15px 35px rgba(14, 165, 233, 0.18);
+    }
+
+    .hero-recommendation-box {
+      background: linear-gradient(135deg, rgba(6, 78, 59, 0.45), rgba(15, 23, 42, 0.96));
+      border: 2px solid #10b981;
+      border-radius: 15px;
+      padding: 16px;
+      box-shadow: 0 0 35px rgba(16, 185, 129, 0.25);
+    }
+
+    .hero-action-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 800;
+      padding: 7px 16px;
+      border-radius: 10px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.45);
+    }
+
+    .savings-pill {
+      display: inline-block;
+      background: rgba(56, 189, 248, 0.2);
+      border: 1px solid rgba(56, 189, 248, 0.5);
+      color: #38bdf8;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Footer */
+    .footer-bar {
+      position: absolute;
+      bottom: 18px;
+      left: 36px;
+      right: 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 22px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 11px;
+      font-size: 11.5px;
+      color: #64748b;
+      z-index: 2;
+    }
+
+    .tech-stack-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .tech-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      color: #94a3b8;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 2.5px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="ambient-glow-1"></div>
+  <div class="ambient-glow-2"></div>
+  <div class="ambient-glow-3"></div>
+
+  <!-- SVG Connectors Canvas -->
+  <svg id="connector-canvas" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrow-blue" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 9 3, 0 6" fill="#38bdf8" />
+      </marker>
+      <marker id="arrow-purple" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 9 3, 0 6" fill="#c084fc" />
+      </marker>
+      <marker id="arrow-amber" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 9 3, 0 6" fill="#fbbf24" />
+      </marker>
+      <marker id="arrow-rose" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 9 3, 0 6" fill="#fb7185" />
+      </marker>
+      <marker id="arrow-emerald" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 9 3, 0 6" fill="#34d399" />
+      </marker>
+    </defs>
+    <g id="path-group"></g>
+  </svg>
+
+  <!-- Header -->
+  <header class="header-bar">
+    <div class="header-title-group">
+      <h1>
+        <span>INTELLIGENT FREIGHT FORECASTING &amp; VESSEL CHARTER OPTIMIZATION</span>
+        <span class="badge-sih">SIH 2026</span>
+        <span class="badge-role">ML + OPTIMIZATION ARCHITECTURE</span>
+      </h1>
+      <div class="sub">
+        <span><strong>Problem Statement:</strong> Ministry of Steel / SAIL (Steel Authority of India Limited)</span>
+        <span>&bull;</span>
+        <span><strong>Corridor:</strong> Overseas Raw Materials &rarr; Indian East Coast Ports (Haldia, Paradip, Vizag, Dhamra)</span>
+        <span>&bull;</span>
+        <span class="badge-target">Minimizing Landed Cost ($/MT) Under Draft, Demurrage &amp; Stockout Constraints</span>
+      </div>
+    </div>
+    <div class="header-metrics">
+      <div class="metric-chip">
+        <div class="val">P10 / P50 / P90</div>
+        <div class="lbl">Probabilistic Quantiles</div>
+      </div>
+      <div class="metric-chip">
+        <div class="val">MILP Solvers</div>
+        <div class="lbl">PuLP / OR-Tools / HiGHS</div>
+      </div>
+      <div class="metric-chip">
+        <div class="val">7d to 90d</div>
+        <div class="lbl">Planning Horizons</div>
+      </div>
+      <div class="metric-chip">
+        <div class="val">6 East Coast Ports</div>
+        <div class="lbl">Tidal &amp; Draft Modeling</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Flowchart Body -->
+  <main class="flowchart-container">
+
+    <!-- ======================================================== -->
+    <!-- COLUMN 0: USER CONSIGNMENT & REQUISITION                 -->
+    <!-- ======================================================== -->
+    <div class="column-lane">
+      <div class="lane-header theme-blue">
+        <span class="lane-num">0</span>
+        <span>Consignment &amp; Requisition</span>
+      </div>
+
+      <!-- User Input Card -->
+      <div class="arch-card highlight-card" id="node-consignment-input">
+        <div class="card-title">
+          <span>Cargo Requirements</span>
+          <span class="tag tag-blue">Input Spec</span>
+        </div>
+        <ul class="data-list">
+          <li>
+            <span class="bullet-dot dot-blue"></span>
+            <div><strong>Commodity:</strong> Coking Coal / Thermal Coal / Met Coke / Limestone</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-blue"></span>
+            <div><strong>Consignment Quantity:</strong> <span class="code-pill">Q = 75,000 MT</span> (&plusmn;10% MOLOO)</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-blue"></span>
+            <div><strong>Origin Terminal:</strong> Taboneo (IDN), Gladstone (AUS), Norfolk (USA), Maputo (MOZ)</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-blue"></span>
+            <div><strong>Discharge Port:</strong> Haldia Dock Complex (HDC) / Paradip / Visakhapatnam</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-blue"></span>
+            <div><strong>Laycan Window:</strong> <span class="code-pill">[T_start, T_end]</span> (e.g., Oct 15 - Oct 25)</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-blue"></span>
+            <div><strong>Plant Stockout Deadline:</strong> <span class="code-pill">T_crit</span> (Critical inventory run-out at Bokaro/Rourkela)</div>
+          </li>
+        </ul>
+        <div class="formula-box">
+          Required Arrival: t_arrival &le; T_crit<br/>
+          Laycan Window: t_dep + t_voyage &isin; [T_start, T_end]
+        </div>
+      </div>
+
+      <!-- Baseline Problem -->
+      <div class="arch-card" id="node-baseline-problem">
+        <div class="card-title">
+          <span>Current Baseline Problem</span>
+          <span class="tag tag-rose">Vulnerability</span>
+        </div>
+        <ul class="data-list">
+          <li>
+            <span class="bullet-dot dot-rose"></span>
+            <div><strong>Reactive Spot Fixing:</strong> Chartering day-to-day without forward forecasting leads to locking vessels during market spikes.</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-rose"></span>
+            <div><strong>Draft Restrictions:</strong> Haldia riverine draft (&lt;8.5m) forces dead-freight or costly unexpected emergency lightering.</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-rose"></span>
+            <div><strong>Demurrage Bleed:</strong> Berth queues at Paradip &amp; Haldia cause $20,000/day bleed on unoptimized laytime terms.</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-rose"></span>
+            <div><strong>Sub-optimal Vessel:</strong> Booking Handysize when Panamax + lightering saves $4.50/MT landed.</div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Vessel Sizing Economics -->
+      <div class="arch-card" id="node-vessel-economics">
+        <div class="card-title">
+          <span>Vessel Sizing &amp; Scale Curve</span>
+          <span class="tag tag-blue">Economics</span>
+        </div>
+        <table class="mini-table">
+          <thead>
+            <tr><th>Class</th><th>Capacity</th><th>Base Spot $/MT</th><th>Draft Req</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Handysize</td>
+              <td>28k - 38k MT</td>
+              <td>$22.50 / MT</td>
+              <td>~9.8m</td>
+            </tr>
+            <tr>
+              <td>Supramax</td>
+              <td>50k - 58k MT</td>
+              <td>$18.80 / MT</td>
+              <td>~12.2m</td>
+            </tr>
+            <tr>
+              <td>Panamax</td>
+              <td>70k - 82k MT</td>
+              <td>$14.20 / MT</td>
+              <td>~14.5m</td>
+            </tr>
+            <tr>
+              <td>Capesize</td>
+              <td>150k - 180k MT</td>
+              <td>$11.80 / MT</td>
+              <td>~18.2m</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Contract Modalities -->
+      <div class="arch-card" id="node-contract-modes">
+        <div class="card-title">
+          <span>Contract Modalities</span>
+          <span class="tag tag-blue">Charter Modes</span>
+        </div>
+        <table class="mini-table">
+          <thead>
+            <tr><th>Mode</th><th>Basis</th><th>Exposure</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Voyage Charter</strong></td>
+              <td>$/MT lump sum</td>
+              <td>Fuel included; demurrage exposed</td>
+            </tr>
+            <tr>
+              <td><strong>Time Charter (TC)</strong></td>
+              <td>$/day hire</td>
+              <td>Full bunker + canal + port dues risk</td>
+            </tr>
+            <tr>
+              <td><strong>COA Contract</strong></td>
+              <td>Multi-shipment</td>
+              <td>Quarterly volume commitments</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Engine Triggers -->
+      <div class="arch-card" id="node-workflow-trigger">
+        <div class="card-title">
+          <span>Engine Execution Triggers</span>
+          <span class="tag tag-cyan">Automation</span>
+        </div>
+        <ul class="data-list">
+          <li><span class="bullet-dot dot-cyan"></span><strong>Scheduled Run:</strong> Daily automated optimization at 06:00 UTC</li>
+          <li><span class="bullet-dot dot-cyan"></span><strong>Market Event:</strong> Trigger on Baltic Index daily swing &gt; 4.5%</li>
+          <li><span class="bullet-dot dot-cyan"></span><strong>Interactive Requisition:</strong> Real-time simulation on user query</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- COLUMN 1: MULTI-SOURCE INGESTION & DATA LAKE             -->
+    <!-- ======================================================== -->
+    <div class="column-lane">
+      <div class="lane-header theme-blue">
+        <span class="lane-num">1</span>
+        <span>Multi-Source Ingestion &amp; Lake</span>
+      </div>
+
+      <!-- Baltic Indices -->
+      <div class="arch-card" id="node-baltic-data">
+        <div class="card-title">
+          <span>Baltic Exchange Indices</span>
+          <span class="tag tag-blue">Daily TS</span>
+        </div>
+        <ul class="data-list">
+          <li><span class="bullet-dot dot-blue"></span><strong>BDI:</strong> Baltic Dry Composite Benchmark</li>
+          <li><span class="bullet-dot dot-blue"></span><strong>BCI:</strong> Baltic Capesize Index (180,000 DWT)</li>
+          <li><span class="bullet-dot dot-blue"></span><strong>BPI:</strong> Baltic Panamax Index (82,500 DWT)</li>
+          <li><span class="bullet-dot dot-blue"></span><strong>BSI:</strong> Baltic Supramax Index (58,328 DWT)</li>
+          <li><span class="bullet-dot dot-blue"></span><strong>BHSI:</strong> Baltic Handysize Index (38,200 DWT)</li>
+        </ul>
+        <div class="formula-box">
+          Features: 7d/14d/30d Rolling Mean, Volatility &sigma;,<br/>
+          RSI(14), MACD(12,26,9), Cross-Index Spreads
+        </div>
+      </div>
+
+      <!-- Bunker Fuel Market -->
+      <div class="arch-card" id="node-bunker-data">
+        <div class="card-title">
+          <span>Bunker Fuel Benchmarks</span>
+          <span class="tag tag-blue">Energy Feed</span>
+        </div>
+        <ul class="data-list">
+          <li><span class="bullet-dot dot-blue"></span><strong>VLSFO (0.5% S):</strong> Singapore &amp; Fujairah Hubs</li>
+          <li><span class="bullet-dot dot-blue"></span><strong>LSMGO (0.1% S):</strong> Marine Gas Oil ECA compliant</li>
+          <li><span class="bullet-dot dot-blue"></span><strong>Brent Crude:</strong> Macro energy momentum indicator</li>
+          <li><span class="bullet-dot dot-blue"></span><strong>Hi-5 Spread:</strong> VLSFO vs HSFO scrubber arbitrage</li>
+        </ul>
+        <div class="formula-box amber-accent">
+          BAF Adjustment = Consumption_Rate &times; &Delta;P_bunker
+        </div>
+      </div>
+
+      <!-- Port Handbook & Infrastructure Constraints -->
+      <div class="arch-card" id="node-port-data">
+        <div class="card-title">
+          <span>Port Master &amp; Constraints</span>
+          <span class="tag tag-amber">Static/Tidal</span>
+        </div>
+        <table class="mini-table">
+          <thead>
+            <tr><th>Port</th><th>Max Draft</th><th>Max LOA</th><th>Discharge Rate</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Haldia (HDC)</strong></td>
+              <td>7.5m - 8.5m</td>
+              <td>195m</td>
+              <td>12,000 MT/day</td>
+            </tr>
+            <tr>
+              <td><strong>Paradip</strong></td>
+              <td>14.5m - 16.0m</td>
+              <td>260m</td>
+              <td>25,000 MT/day</td>
+            </tr>
+            <tr>
+              <td><strong>Vizag / Gang.</strong></td>
+              <td>16.5m - 18.5m</td>
+              <td>300m</td>
+              <td>35,000 MT/day</td>
+            </tr>
+            <tr>
+              <td><strong>Dhamra</strong></td>
+              <td>18.0m</td>
+              <td>320m</td>
+              <td>30,000 MT/day</td>
+            </tr>
+            <tr>
+              <td><strong>Sandheads (Anch)</strong></td>
+              <td>Deepwater</td>
+              <td>Cape</td>
+              <td>15,000 MT/day (FSU)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Vessel Registry Data -->
+      <div class="arch-card" id="node-vessel-data">
+        <div class="card-title">
+          <span>Vessel Fleet Specifications</span>
+          <span class="tag tag-amber">Fleet DB</span>
+        </div>
+        <ul class="data-list">
+          <li><span class="bullet-dot dot-amber"></span><strong>Handysize:</strong> 28k-39k DWT | Draft: 10.0m | LOA: 180m</li>
+          <li><span class="bullet-dot dot-amber"></span><strong>Supramax/Ultra:</strong> 50k-64k DWT | Draft: 12.8m | LOA: 199m</li>
+          <li><span class="bullet-dot dot-amber"></span><strong>Panamax/Kamsar:</strong> 65k-85k DWT | Draft: 14.5m | LOA: 229m</li>
+          <li><span class="bullet-dot dot-amber"></span><strong>Capesize:</strong> 120k-200k DWT | Draft: 18.2m | LOA: 292m</li>
+          <li><span class="bullet-dot dot-amber"></span><strong>Speed/Consumption:</strong> Ballast 13.0 kts, Laden 12.0 kts</li>
+        </ul>
+      </div>
+
+      <!-- AIS Congestion & Telemetry -->
+      <div class="arch-card" id="node-ais-data">
+        <div class="card-title">
+          <span>AIS Congestion &amp; Telemetry</span>
+          <span class="tag tag-cyan">Real-Time</span>
+        </div>
+        <ul class="data-list">
+          <li><span class="bullet-dot dot-cyan"></span><strong>Port Anchorage Queue:</strong> Real-time vessel count at roadstead</li>
+          <li><span class="bullet-dot dot-cyan"></span><strong>Historical Waiting Time:</strong> Moving median wait (days)</li>
+          <li><span class="bullet-dot dot-cyan"></span><strong>Macro &amp; FX:</strong> USD/INR spot + forward, China Steel PMI</li>
+          <li><span class="bullet-dot dot-cyan"></span><strong>Weather / Monsoon:</strong> SW monsoon (Jun-Sep), cyclones</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- COLUMN 2: ML FREIGHT FORECASTING PIPELINE                -->
+    <!-- ======================================================== -->
+    <div class="column-lane">
+      <div class="lane-header theme-purple">
+        <span class="lane-num">2</span>
+        <span>ML Freight Rate Forecasting</span>
+      </div>
+
+      <!-- Feature Engineering -->
+      <div class="arch-card" id="node-ml-features">
+        <div class="card-title">
+          <span>Feature Engineering Pipeline</span>
+          <span class="tag tag-purple">Preprocessing</span>
+        </div>
+        <ul class="data-list">
+          <li>
+            <span class="bullet-dot dot-purple"></span>
+            <div><strong>Temporal Lags:</strong> Lags t-1, t-3, t-7, t-14, t-30 of Route Spot Rates</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-purple"></span>
+            <div><strong>Exogenous Regressors:</strong> BDI, BPI, BSI, VLSFO Singapore, Coal Argus Index</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-purple"></span>
+            <div><strong>Calendar Cyclics:</strong> sin(2&pi;d/365), cos(2&pi;d/365), Monsoon indicator</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-purple"></span>
+            <div><strong>Cross-Feature Ratios:</strong> Route Rate / BDI, Bunker / Freight Intensity</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-purple"></span>
+            <div><strong>Target Horizons:</strong> h &isin; {7, 15, 30, 60, 90} days ahead</div>
+          </li>
+        </ul>
+        <div class="formula-box purple-accent">
+          X_t = [F_{t-k}, BDI_{t-k}, Bunker_{t-k}, Macro_t, Season_t]
+        </div>
+      </div>
+
+      <!-- Probabilistic Quantile ML Models -->
+      <div class="arch-card highlight-card" id="node-ml-models">
+        <div class="card-title">
+          <span>Ensemble Quantile Models</span>
+          <span class="tag tag-purple">Core ML</span>
+        </div>
+        <ul class="data-list">
+          <li>
+            <span class="bullet-dot dot-purple"></span>
+            <div><strong>LightGBM Quantile Regressors:</strong> Pinball Loss optimization for &alpha; &isin; {0.10, 0.50, 0.90}</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-purple"></span>
+            <div><strong>Prophet Bayesian Time Series:</strong> Additive seasonality + changepoint trend detection</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-purple"></span>
+            <div><strong>Temporal Fusion Transformer (TFT):</strong> Multi-horizon self-attention networks</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-purple"></span>
+            <div><strong>Validation:</strong> Purged Walk-Forward Expanding Window CV (zero data leakage)</div>
+          </li>
+        </ul>
+        <div class="formula-box purple-accent">
+          Pinball Loss:<br/>
+          L_q(y, y_pred) = max(q(y - y_pred), (1 - q)(y_pred - y))
+        </div>
+      </div>
+
+      <!-- Quantile Outputs -->
+      <div class="arch-card" id="node-forecast-outputs">
+        <div class="card-title">
+          <span>Forecast Confidence Envelopes</span>
+          <span class="tag tag-emerald">Rate Predictions</span>
+        </div>
+        <table class="mini-table">
+          <thead>
+            <tr><th>Metric</th><th>Percentile</th><th>Operational Meaning</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>P10</strong></td>
+              <td>10th %ile</td>
+              <td><span class="status-badge status-ok">Optimistic / Trough Rate</span></td>
+            </tr>
+            <tr>
+              <td><strong>P50</strong></td>
+              <td>50th %ile</td>
+              <td><span class="status-badge status-warn">Base Expected Rate</span></td>
+            </tr>
+            <tr>
+              <td><strong>P90</strong></td>
+              <td>90th %ile</td>
+              <td><span class="status-badge status-alert">Pessimistic / Spike Rate</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="formula-box emerald-accent">
+          Spread &Delta; = P90 - P10 indicates Market Volatility Risk
+        </div>
+      </div>
+
+      <!-- Model Performance & Backtesting Metrics -->
+      <div class="arch-card" id="node-model-metrics">
+        <div class="card-title">
+          <span>Backtest Validation Metrics</span>
+          <span class="tag tag-emerald">Accuracy</span>
+        </div>
+        <table class="mini-table">
+          <thead>
+            <tr><th>Horizon</th><th>MAE ($/MT)</th><th>MAPE (%)</th><th>Dir Accuracy</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>7 Days</strong></td>
+              <td>$0.48 / MT</td>
+              <td>3.2%</td>
+              <td><span class="status-badge status-ok">86.4%</span></td>
+            </tr>
+            <tr>
+              <td><strong>30 Days</strong></td>
+              <td>$0.95 / MT</td>
+              <td>6.8%</td>
+              <td><span class="status-badge status-ok">81.2%</span></td>
+            </tr>
+            <tr>
+              <td><strong>90 Days</strong></td>
+              <td>$1.82 / MT</td>
+              <td>12.4%</td>
+              <td><span class="status-badge status-warn">74.5%</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Explainability & SHAP -->
+      <div class="arch-card" id="node-shap-attrib">
+        <div class="card-title">
+          <span>Explainable AI (XAI)</span>
+          <span class="tag tag-purple">SHAP Attrib</span>
+        </div>
+        <ul class="data-list">
+          <li><span class="bullet-dot dot-purple"></span><strong>VLSFO Price Shock:</strong> Contributes +38% to freight upside</li>
+          <li><span class="bullet-dot dot-purple"></span><strong>BPI Momentum:</strong> Contributes +25% trend alignment</li>
+          <li><span class="bullet-dot dot-purple"></span><strong>Monsoon Seasonality:</strong> Dampens port handling throughput</li>
+          <li><span class="bullet-dot dot-purple"></span><strong>China Steel Production:</strong> Macro demand pull signal</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- COLUMN 3: PORT & VESSEL FEASIBILITY MATRIX               -->
+    <!-- ======================================================== -->
+    <div class="column-lane">
+      <div class="lane-header theme-amber">
+        <span class="lane-num">3</span>
+        <span>Port &amp; Vessel Feasibility</span>
+      </div>
+
+      <!-- Physical Compatibility Engine -->
+      <div class="arch-card" id="node-feasibility-check">
+        <div class="card-title">
+          <span>Physical Constraint Engine</span>
+          <span class="tag tag-amber">Rule Matrix</span>
+        </div>
+        <ul class="data-list">
+          <li>
+            <span class="bullet-dot dot-amber"></span>
+            <div><strong>Draft Verification:</strong> Vessel Laden Draft &le; Port Permissible Draft (LAT + Tide)</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-amber"></span>
+            <div><strong>LOA (Length Overall):</strong> LOA_vessel &le; Max Permitted Berth LOA</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-amber"></span>
+            <div><strong>Beam Limitation:</strong> Lock gates and gantry crane outreach limits</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-amber"></span>
+            <div><strong>Air Draft:</strong> Conveyor bridge clearances at riverine berths</div>
+          </li>
+        </ul>
+        <div class="formula-box amber-accent">
+          IsDirectFeasible = (Draft_v &le; Draft_port) &and;<br/>
+          (LOA_v &le; MaxLOA_port) &and; (Beam_v &le; MaxBeam_port)
+        </div>
+      </div>
+
+      <!-- Haldia Riverine Bottleneck & Lightering Logic -->
+      <div class="arch-card highlight-card" id="node-haldia-bottleneck">
+        <div class="card-title">
+          <span>Haldia Bottleneck: Sandheads Logic</span>
+          <span class="tag tag-amber">Core SIH Focus</span>
+        </div>
+        <p style="font-size: 11.5px; color: #cbd5e1; margin-bottom: 7px;">
+          Haldia Dock Complex cannot handle deep-draft Panamax/Capesize (&gt;8.5m). Two routing pathways exist:
+        </p>
+        <ul class="data-list">
+          <li>
+            <span class="bullet-dot dot-amber"></span>
+            <div><strong>Pathway A (Direct Smaller Vessel):</strong> Charter Handysize / Supramax (shortage in supply, higher $/MT freight).</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-emerald"></span>
+            <div><strong>Pathway B (Mother-Daughter Lightering):</strong> Charter large Panamax/Capesize (cheap freight) &rarr; lighten at Sandheads / Sagar &rarr; barge to Haldia.</div>
+          </li>
+        </ul>
+        <div class="formula-box emerald-accent">
+          If Draft_v &gt; 8.5m &amp; Port == HDC:<br/>
+          &rArr; Trigger Forced Lightering Sub-Model (Sandheads)
+        </div>
+      </div>
+
+      <!-- Sandheads Transshipment Protocols -->
+      <div class="arch-card" id="node-sandheads-protocol">
+        <div class="card-title">
+          <span>Sandheads Transshipment Specs</span>
+          <span class="tag tag-amber">Operations</span>
+        </div>
+        <ul class="data-list">
+          <li><span class="bullet-dot dot-amber"></span><strong>Lightering Anchorage:</strong> Sandheads deep roadstead (20m water)</li>
+          <li><span class="bullet-dot dot-amber"></span><strong>Floating Crane Transshipment:</strong> Rate: 15,000 MT/day</li>
+          <li><span class="bullet-dot dot-amber"></span><strong>Weather Cutoff:</strong> Wave swell &gt; 2.2m halts operations</li>
+          <li><span class="bullet-dot dot-amber"></span><strong>Daughter Barge Transit:</strong> 18h transit time from Sandheads to HDC</li>
+        </ul>
+      </div>
+
+      <!-- Feasibility Truth Matrix -->
+      <div class="arch-card" id="node-feasibility-matrix">
+        <div class="card-title">
+          <span>Feasibility Routing Matrix</span>
+          <span class="tag tag-amber">Route Lookup</span>
+        </div>
+        <table class="mini-table">
+          <thead>
+            <tr><th>Vessel Class</th><th>Haldia</th><th>Paradip</th><th>Vizag</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Handysize (35k)</strong></td>
+              <td><span class="status-badge status-ok">Direct BERTH</span></td>
+              <td><span class="status-badge status-ok">Direct</span></td>
+              <td><span class="status-badge status-ok">Direct</span></td>
+            </tr>
+            <tr>
+              <td><strong>Supramax (58k)</strong></td>
+              <td><span class="status-badge status-warn">Partial Draft</span></td>
+              <td><span class="status-badge status-ok">Direct</span></td>
+              <td><span class="status-badge status-ok">Direct</span></td>
+            </tr>
+            <tr>
+              <td><strong>Panamax (75k)</strong></td>
+              <td><span class="status-badge status-alert">LIGHTERING REQ</span></td>
+              <td><span class="status-badge status-ok">Direct</span></td>
+              <td><span class="status-badge status-ok">Direct</span></td>
+            </tr>
+            <tr>
+              <td><strong>Capesize (150k)</strong></td>
+              <td><span class="status-badge status-alert">LIGHTERING REQ</span></td>
+              <td><span class="status-badge status-ok">Direct</span></td>
+              <td><span class="status-badge status-ok">Direct</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Dynamic Tide Adjustments -->
+      <div class="arch-card" id="node-tide-adjust">
+        <div class="card-title">
+          <span>Dynamic Tidal Windows</span>
+          <span class="tag tag-cyan">Hydrodynamics</span>
+        </div>
+        <ul class="data-list">
+          <li><span class="bullet-dot dot-cyan"></span>Spring Tide vs Neap Tide water level variations (+1.2m)</li>
+          <li><span class="bullet-dot dot-cyan"></span>Hooghly river siltation seasonal dredging notices</li>
+          <li><span class="bullet-dot dot-cyan"></span>Under-Keel Clearance (UKC) safety buffer: 0.9m minimum</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- COLUMN 4: CONGESTION RISK & DEMURRAGE ENGINE             -->
+    <!-- ======================================================== -->
+    <div class="column-lane">
+      <div class="lane-header theme-rose">
+        <span class="lane-num">4</span>
+        <span>Maritime Risk &amp; Demurrage</span>
+      </div>
+
+      <!-- Congestion & Queuing Model -->
+      <div class="arch-card" id="node-congestion-engine">
+        <div class="card-title">
+          <span>Port Congestion &amp; Queue</span>
+          <span class="tag tag-rose">Queue Theory</span>
+        </div>
+        <ul class="data-list">
+          <li>
+            <span class="bullet-dot dot-rose"></span>
+            <div><strong>M/M/c Berth Queue Model:</strong> Arrival rate &lambda; vs service rate &mu;</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-rose"></span>
+            <div><strong>Expected Waiting Days:</strong> W_q = f(AIS vessels waiting, berth availability)</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-rose"></span>
+            <div><strong>Paradip / Haldia Average:</strong> 2.5 to 6.0 days waiting time during peak coal intake</div>
+          </li>
+        </ul>
+        <div class="formula-box rose-accent">
+          Turnaround = W_queue + (Cargo_MT / Discharge_Rate)
+        </div>
+      </div>
+
+      <!-- Laytime vs Demurrage Calculation -->
+      <div class="arch-card highlight-card" id="node-demurrage-calc">
+        <div class="card-title">
+          <span>Demurrage Exposure Engine</span>
+          <span class="tag tag-rose">Cost Risk</span>
+        </div>
+        <ul class="data-list">
+          <li>
+            <span class="bullet-dot dot-rose"></span>
+            <div><strong>Laytime Allowed:</strong> Based on agreed Charter Party (CP) discharge rate</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-rose"></span>
+            <div><strong>Demurrage Rate:</strong> $18,000 to $32,000 per day (vessel size dependent)</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-rose"></span>
+            <div><strong>Despatch Bonus:</strong> Half demurrage earned if discharged early</div>
+          </li>
+        </ul>
+        <div class="formula-box rose-accent">
+          Allowed Days = Cargo_MT / CP_Discharge_Rate<br/>
+          Overstay Days = max(0, Turnaround - Allowed Days)<br/>
+          Demurrage Exposure = Overstay Days &times; Demurrage_Rate
+        </div>
+      </div>
+
+      <!-- Weather & Disruption Warnings -->
+      <div class="arch-card" id="node-disruption-warn">
+        <div class="card-title">
+          <span>Disruption Warnings</span>
+          <span class="tag tag-rose">Early Alerts</span>
+        </div>
+        <ul class="data-list">
+          <li><span class="bullet-dot dot-rose"></span><strong>Cyclone Risk:</strong> Bay of Bengal alert during Oct-Nov &amp; Apr-May</li>
+          <li><span class="bullet-dot dot-rose"></span><strong>Draft Derating:</strong> Monsoon siltation reduces permissible draft by 0.4m</li>
+          <li><span class="bullet-dot dot-rose"></span><strong>Canal Delays:</strong> Malacca Strait congestion &amp; pilot availability</li>
+        </ul>
+      </div>
+
+      <!-- Historical East Coast Congestion Levels -->
+      <div class="arch-card" id="node-port-congestion-stats">
+        <div class="card-title">
+          <span>Terminal Congestion Benchmarks</span>
+          <span class="tag tag-rose">AIS Telemetry</span>
+        </div>
+        <table class="mini-table">
+          <thead>
+            <tr><th>Terminal</th><th>Mean Wait</th><th>Congestion Index</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Haldia HDC</td>
+              <td>4.8 Days</td>
+              <td>High (0.82)</td>
+              <td><span class="status-badge status-alert">Bottleneck</span></td>
+            </tr>
+            <tr>
+              <td>Paradip Mech.</td>
+              <td>3.2 Days</td>
+              <td>Moderate (0.58)</td>
+              <td><span class="status-badge status-warn">Normal</span></td>
+            </tr>
+            <tr>
+              <td>Vizag VCT</td>
+              <td>1.5 Days</td>
+              <td>Low (0.24)</td>
+              <td><span class="status-badge status-ok">Fluid</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Deadheading & Ballast Repositioning -->
+      <div class="arch-card" id="node-deadheading-opt">
+        <div class="card-title">
+          <span>Idle / Repositioning Engine</span>
+          <span class="tag tag-amber">Asset Efficiency</span>
+        </div>
+        <ul class="data-list">
+          <li><span class="bullet-dot dot-amber"></span><strong>Empty Ballast Penalty:</strong> Returning empty to Australia adds $/day cost</li>
+          <li><span class="bullet-dot dot-amber"></span><strong>Backhaul Matching:</strong> Matching iron ore export from Paradip &rarr; China to offset deadheading cost</li>
+          <li><span class="bullet-dot dot-amber"></span><strong>Triangulation Routing:</strong> AUS &rarr; India &rarr; S.Africa &rarr; India</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- COLUMN 5: LANDED COST & OPTIMIZATION (MILP)              -->
+    <!-- ======================================================== -->
+    <div class="column-lane">
+      <div class="lane-header theme-emerald">
+        <span class="lane-num">5</span>
+        <span>Landed Cost &amp; MILP Engine</span>
+      </div>
+
+      <!-- Landed Cost Formulation -->
+      <div class="arch-card highlight-card" id="node-landed-cost">
+        <div class="card-title">
+          <span>Total Landed Cost Formula</span>
+          <span class="tag tag-emerald">Objective Component</span>
+        </div>
+        <div class="formula-box emerald-accent" style="font-size: 10.5px;">
+          Landed Cost ($/MT) = [<br/>
+          &nbsp;&nbsp;Base Freight (Forecast P50 &times; Q)<br/>
+          &nbsp;&nbsp;+ Bunker Adjustment Factor (BAF)<br/>
+          &nbsp;&nbsp;+ Demurrage Exposure ($/day &times; Wait_days)<br/>
+          &nbsp;&nbsp;+ Lightering &amp; Barging Cost ($/MT &times; Q_lightened)<br/>
+          &nbsp;&nbsp;+ Port Dues, Pilotage &amp; Handling Charges<br/>
+          ] / Cargo Volume (Q)
+        </div>
+        <ul class="data-list" style="margin-top: 7px;">
+          <li><span class="bullet-dot dot-emerald"></span><strong>Lightering Fee:</strong> ~$7.50/MT for transshipment at Sandheads</li>
+          <li><span class="bullet-dot dot-emerald"></span><strong>Port Charges:</strong> $2.20/MT standard East Coast tariff</li>
+        </ul>
+      </div>
+
+      <!-- MILP Formulation -->
+      <div class="arch-card" id="node-milp-formulation">
+        <div class="card-title">
+          <span>MILP Mathematical Formulation</span>
+          <span class="tag tag-emerald">Solver Spec</span>
+        </div>
+        <ul class="data-list">
+          <li>
+            <span class="bullet-dot dot-emerald"></span>
+            <div><strong>Decision Variable:</strong> <span class="code-pill">x_{v,r,t} &isin; {0, 1}</span> (Vessel v, Route r, Charter Day t)</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-emerald"></span>
+            <div><strong>Timing Variable:</strong> <span class="code-pill">y_fix_now &isin; {0, 1}</span> vs <span class="code-pill">y_hold &isin; {0, 1}</span></div>
+          </li>
+        </ul>
+        <div class="formula-box emerald-accent">
+          min &sum;_{v,r,t} x_{v,r,t} &times; [ LandedCost(v,r,t) + &lambda; &times; Risk(v,r,t) ]<br/><br/>
+          Subject to:<br/>
+          &bull; &sum;_{v,r,t} x_{v,r,t} &times; Capacity_v &ge; Cargo_Required<br/>
+          &bull; t + VoyageTime(v,r) &le; Plant_Deadline (T_crit)<br/>
+          &bull; t &isin; Laycan_Window<br/>
+          &bull; Draft_v &le; PortDraft_r + M &times; z_{lightering}<br/>
+          &bull; &sum;_{v,r,t} x_{v,r,t} = 1 (Single shipment assignment)
+        </div>
+      </div>
+
+      <!-- Scenario Evaluation Engine -->
+      <div class="arch-card" id="node-scenario-eval">
+        <div class="card-title">
+          <span>Option Trade-Off Evaluation</span>
+          <span class="tag tag-emerald">What-If Sim</span>
+        </div>
+        <table class="mini-table">
+          <thead>
+            <tr><th>Option</th><th>Freight</th><th>Lightering</th><th>Demurrage</th><th>Total $/MT</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. Supramax Direct</strong></td>
+              <td>$22.50</td>
+              <td>$0.00</td>
+              <td>$1.80</td>
+              <td><strong>$24.30</strong></td>
+            </tr>
+            <tr>
+              <td><strong>2. Panamax + Lighten</strong></td>
+              <td>$14.20</td>
+              <td>$4.80</td>
+              <td>$1.20</td>
+              <td><strong style="color: #34d399;">$20.20 (Best)</strong></td>
+            </tr>
+            <tr>
+              <td><strong>3. Cape to Paradip</strong></td>
+              <td>$11.80</td>
+              <td>$0.00 + Rake</td>
+              <td>$2.40</td>
+              <td><strong>$21.90</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Monte Carlo Simulation -->
+      <div class="arch-card" id="node-monte-carlo">
+        <div class="card-title">
+          <span>Monte Carlo Risk Simulation</span>
+          <span class="tag tag-emerald">10,000 Runs</span>
+        </div>
+        <ul class="data-list">
+          <li><span class="bullet-dot dot-emerald"></span><strong>Value at Risk (VaR 95%):</strong> Maximum landed cost $24.70/MT</li>
+          <li><span class="bullet-dot dot-emerald"></span><strong>Conditional VaR (CVaR):</strong> Expected cost in worst 5% = $26.10/MT</li>
+          <li><span class="bullet-dot dot-emerald"></span><strong>Demurrage Volatility:</strong> Modeled via log-normal distribution</li>
+        </ul>
+      </div>
+
+      <!-- Charter Timing Logic -->
+      <div class="arch-card" id="node-timing-logic">
+        <div class="card-title">
+          <span>Charter Timing Logic</span>
+          <span class="tag tag-purple">Decision Rule</span>
+        </div>
+        <div class="formula-box purple-accent">
+          If E[Rate_{t+k}] &gt; Rate_today + Holding_Cost:<br/>
+          &rArr; Recommendation = "FIX NOW" (Protect against rally)<br/>
+          Else If E[Rate_{t+k}] &lt; Rate_today - Volatility_Buffer:<br/>
+          &rArr; Recommendation = "WAIT / HOLD" (Harvest softening)
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- COLUMN 6: ACTIONABLE DECISION & TECH STACK               -->
+    <!-- ======================================================== -->
+    <div class="column-lane">
+      <div class="lane-header theme-cyan">
+        <span class="lane-num">6</span>
+        <span>Decision Output &amp; Recommendation</span>
+      </div>
+
+      <!-- Hero Recommendation Output -->
+      <div class="hero-recommendation-box" id="node-recommendation">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div class="hero-action-pill">
+            <span>ACTION: FIX NOW</span>
+            <span style="font-size: 12px; font-weight: 500; opacity: 0.9;">(Confidence 88%)</span>
+          </div>
+          <div class="savings-pill">Projected Savings: $307,500 ($4.10/MT)</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <div style="background: rgba(0,0,0,0.4); padding: 9px 11px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+            <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">Optimal Vessel Class</div>
+            <div style="font-size: 14.5px; font-weight: 700; color: #ffffff; margin-top: 2px;">Kamsarmax / Panamax (75k-82k DWT)</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.4); padding: 9px 11px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+            <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">Optimal Routing Strategy</div>
+            <div style="font-size: 14.5px; font-weight: 700; color: #ffffff; margin-top: 2px;">Sandheads Lightering &rarr; Haldia Dock</div>
+          </div>
+        </div>
+
+        <!-- Metric Table -->
+        <table class="mini-table" style="background: rgba(0,0,0,0.25); border-radius: 8px;">
+          <thead>
+            <tr><th>Metric</th><th>P10 (Low)</th><th>P50 (Expected)</th><th>P90 (High)</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Forecast Ocean Freight ($/MT)</td>
+              <td>$13.40</td>
+              <td><strong>$14.20</strong></td>
+              <td>$16.80</td>
+            </tr>
+            <tr>
+              <td>Lightering &amp; Port Dues ($/MT)</td>
+              <td>$4.60</td>
+              <td><strong>$4.80</strong></td>
+              <td>$5.10</td>
+            </tr>
+            <tr>
+              <td>Demurrage Exposure ($/MT)</td>
+              <td>$0.70</td>
+              <td><strong>$1.20</strong></td>
+              <td>$2.80</td>
+            </tr>
+            <tr style="border-top: 1.5px solid rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.12);">
+              <td><strong>TOTAL LANDED COST ($/MT)</strong></td>
+              <td style="color: #6ee7b7; font-weight: 700;">$18.70</td>
+              <td style="color: #34d399; font-weight: 800; font-size: 13.5px;">$20.20</td>
+              <td style="color: #f87171; font-weight: 700;">$24.70</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Executive Justification -->
+        <div style="margin-top: 10px; font-size: 11.5px; color: #cbd5e1; line-height: 1.45; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 7px;">
+          <strong>Decision Rationale:</strong> BPI and VLSFO forward curves project an 8.4% freight rally over the next 14 days due to Chinese steel restocking. Fixing a Panamax today at $14.20/MT + Sandheads lightering ($4.80) locks in $20.20/MT landed cost, outperforming both Supramax direct ($24.30) and delayed spot chartering ($22.90 expected in 10 days).
+        </div>
+      </div>
+
+      <!-- Risk Warning Card -->
+      <div class="arch-card" id="node-risk-warning-card">
+        <div class="card-title">
+          <span>Active Maritime Risk Warnings</span>
+          <span class="tag tag-rose">Action Required</span>
+        </div>
+        <ul class="data-list">
+          <li>
+            <span class="bullet-dot dot-rose"></span>
+            <div><strong>Haldia River Draft Siltation:</strong> High tide window required for 8.2m daughter barges. Pilot booking required 48h in advance.</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-amber"></span>
+            <div><strong>Demurrage Exposure Warning:</strong> Paradip coal berths reporting 4 vessels in roadstead. Recommend securing 7 days laytime in Charter Party.</div>
+          </li>
+          <li>
+            <span class="bullet-dot dot-blue"></span>
+            <div><strong>Ballast Employment:</strong> Target Paradip pellet export backhaul to Qingdao to reduce voyage charter premium by $1.80/MT.</div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Port-to-Plant Rail Logistics Integration -->
+      <div class="arch-card" id="node-rail-logistics">
+        <div class="card-title">
+          <span>Hinterland Rail &amp; Rake Linkage</span>
+          <span class="tag tag-cyan">SAIL Steel Plants</span>
+        </div>
+        <table class="mini-table">
+          <thead>
+            <tr><th>Plant Destination</th><th>Optimal Port</th><th>Rail Freight</th><th>Rake Turnaround</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Durgapur (DSP)</strong></td>
+              <td>Haldia (HDC)</td>
+              <td>$4.20 / MT</td>
+              <td>1.8 Days (BOXN)</td>
+            </tr>
+            <tr>
+              <td><strong>Bokaro (BSL)</strong></td>
+              <td>Haldia / Paradip</td>
+              <td>$5.80 / MT</td>
+              <td>2.4 Days</td>
+            </tr>
+            <tr>
+              <td><strong>Rourkela (RSP)</strong></td>
+              <td>Paradip / Dhamra</td>
+              <td>$4.90 / MT</td>
+              <td>2.0 Days</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Complete Tech Stack Architecture -->
+      <div class="arch-card" id="node-tech-stack">
+        <div class="card-title">
+          <span>Production Tech Stack Blueprint</span>
+          <span class="tag tag-cyan">Implementation</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 10.5px;">
+          <div style="background: rgba(0,0,0,0.35); padding: 7px 9px; border-radius: 5px;">
+            <strong style="color: #38bdf8;">ML Pipeline:</strong> LightGBM, Prophet, PyTorch (TFT), scikit-learn, MLflow
+          </div>
+          <div style="background: rgba(0,0,0,0.35); padding: 7px 9px; border-radius: 5px;">
+            <strong style="color: #34d399;">Optimization:</strong> PuLP, SciPy, Google OR-Tools, HiGHS MILP
+          </div>
+          <div style="background: rgba(0,0,0,0.35); padding: 7px 9px; border-radius: 5px;">
+            <strong style="color: #a78bfa;">Backend API:</strong> FastAPI (Python), Celery Tasks, Redis Cache, PostgreSQL
+          </div>
+          <div style="background: rgba(0,0,0,0.35); padding: 7px 9px; border-radius: 5px;">
+            <strong style="color: #fbbf24;">Frontend UI:</strong> React, TailwindCSS, Chart.js, Leaflet AIS Map
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Footer Bar -->
+  <footer class="footer-bar">
+    <div>
+      <strong>SIH 2026 Architectural Specification</strong> &bull; Ministry of Steel / SAIL Bulk Cargo Procurement &bull; Confidential &amp; Proprietary Hackathon Submission
+    </div>
+    <div class="tech-stack-row">
+      <span class="tech-tag">Quantile LightGBM</span>
+      <span class="tech-tag">MILP PuLP / OR-Tools</span>
+      <span class="tech-tag">FastAPI</span>
+      <span class="tech-tag">PostgreSQL</span>
+      <span class="tech-tag">React + Tailwind</span>
+    </div>
+  </footer>
+
+  <!-- Script for Dynamic SVG Path Connectors -->
+  <script>
+    window.addEventListener('load', () => {
+      const svgGroup = document.getElementById('path-group');
+      if (!svgGroup) return;
+
+      const connections = [
+        // Consignment -> Baltic Data & Port Data
+        { from: 'node-consignment-input', to: 'node-baltic-data', color: '#38bdf8', marker: 'arrow-blue', dash: '6 4', width: 2.2 },
+        { from: 'node-consignment-input', to: 'node-port-data', color: '#38bdf8', marker: 'arrow-blue', dash: '6 4', width: 2.2 },
+        
+        // Baltic Data & Bunker -> ML Features
+        { from: 'node-baltic-data', to: 'node-ml-features', color: '#a855f7', marker: 'arrow-purple', dash: '', width: 2.5 },
+        { from: 'node-bunker-data', to: 'node-ml-features', color: '#a855f7', marker: 'arrow-purple', dash: '', width: 2.2 },
+        
+        // ML Features -> ML Models
+        { from: 'node-ml-features', to: 'node-ml-models', color: '#a855f7', marker: 'arrow-purple', dash: '', width: 2.8 },
+        
+        // ML Models -> Forecast Outputs
+        { from: 'node-ml-models', to: 'node-forecast-outputs', color: '#34d399', marker: 'arrow-emerald', dash: '', width: 2.8 },
+        
+        // Port & Vessel Data -> Feasibility Engine
+        { from: 'node-port-data', to: 'node-feasibility-check', color: '#fbbf24', marker: 'arrow-amber', dash: '', width: 2.5 },
+        { from: 'node-vessel-data', to: 'node-feasibility-check', color: '#fbbf24', marker: 'arrow-amber', dash: '', width: 2.2 },
+        
+        // Feasibility Check -> Haldia Bottleneck Lightering
+        { from: 'node-feasibility-check', to: 'node-haldia-bottleneck', color: '#fbbf24', marker: 'arrow-amber', dash: '', width: 2.8 },
+        
+        // AIS Data -> Congestion Engine
+        { from: 'node-ais-data', to: 'node-congestion-engine', color: '#fb7185', marker: 'arrow-rose', dash: '', width: 2.5 },
+        
+        // Congestion Engine -> Demurrage Calc
+        { from: 'node-congestion-engine', to: 'node-demurrage-calc', color: '#fb7185', marker: 'arrow-rose', dash: '', width: 2.8 },
+        
+        // Forecast Outputs -> Landed Cost (Col 2 to Col 5)
+        { from: 'node-forecast-outputs', to: 'node-landed-cost', color: '#34d399', marker: 'arrow-emerald', dash: '', width: 3 },
+        
+        // Haldia Lightering -> Landed Cost (Col 3 to Col 5)
+        { from: 'node-haldia-bottleneck', to: 'node-landed-cost', color: '#fbbf24', marker: 'arrow-amber', dash: '', width: 2.5 },
+        
+        // Demurrage Calc -> Landed Cost (Col 4 to Col 5)
+        { from: 'node-demurrage-calc', to: 'node-landed-cost', color: '#fb7185', marker: 'arrow-rose', dash: '', width: 2.5 },
+        
+        // Landed Cost -> MILP Formulation (within Col 5)
+        { from: 'node-landed-cost', to: 'node-milp-formulation', color: '#34d399', marker: 'arrow-emerald', dash: '', width: 2.8 },
+        
+        // MILP Formulation -> Scenario Eval (within Col 5)
+        { from: 'node-milp-formulation', to: 'node-scenario-eval', color: '#34d399', marker: 'arrow-emerald', dash: '', width: 2.8 },
+        
+        // Scenario Eval -> Final Recommendation (Col 5 to Col 6)
+        { from: 'node-scenario-eval', to: 'node-recommendation', color: '#10b981', marker: 'arrow-emerald', dash: '', width: 3.5 },
+
+        // Timing Logic -> Final Recommendation (Col 5 to Col 6)
+        { from: 'node-timing-logic', to: 'node-recommendation', color: '#c084fc', marker: 'arrow-purple', dash: '5 3', width: 2.2 }
+      ];
+
+      connections.forEach(conn => {
+        const fromElem = document.getElementById(conn.from);
+        const toElem = document.getElementById(conn.to);
+        if (!fromElem || !toElem) return;
+
+        const r1 = fromElem.getBoundingClientRect();
+        const r2 = toElem.getBoundingClientRect();
+
+        let x1, y1, x2, y2;
+
+        if (r2.left > r1.right) {
+          // Horizontal flow Left to Right
+          x1 = r1.right;
+          y1 = r1.top + r1.height * 0.5;
+          x2 = r2.left;
+          y2 = r2.top + r2.height * 0.5;
+          const dx = (x2 - x1) * 0.5;
+          const pathStr = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('d', pathStr);
+          path.setAttribute('fill', 'none');
+          path.setAttribute('stroke', conn.color);
+          path.setAttribute('stroke-width', conn.width);
+          if (conn.dash) path.setAttribute('stroke-dasharray', conn.dash);
+          path.setAttribute('marker-end', `url(#${conn.marker})`);
+          svgGroup.appendChild(path);
+        } else {
+          // Vertical flow within same column
+          x1 = r1.left + r1.width * 0.5;
+          y1 = r1.bottom;
+          x2 = r2.left + r2.width * 0.5;
+          y2 = r2.top;
+          const dy = (y2 - y1) * 0.5;
+          const pathStr = `M ${x1} ${y1} C ${x1} ${y1 + dy}, ${x2} ${y2 - dy}, ${x2} ${y2}`;
+
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('d', pathStr);
+          path.setAttribute('fill', 'none');
+          path.setAttribute('stroke', conn.color);
+          path.setAttribute('stroke-width', conn.width);
+          if (conn.dash) path.setAttribute('stroke-dasharray', conn.dash);
+          path.setAttribute('marker-end', `url(#${conn.marker})`);
+          svgGroup.appendChild(path);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAIL Freight Forecasting: Exactly What We Are Predicting</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-base: #0b0f19;
+    --card-bg: #111827;
+    --card-border: #1f2937;
+    --accent-blue: #38bdf8;
+    --accent-emerald: #10b981;
+    --accent-rose: #f43f5e;
+    --accent-amber: #f59e0b;
+    --accent-indigo: #6366f1;
+    --text-main: #f3f4f6;
+    --text-muted: #9ca3af;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-base);
+    color: var(--text-main);
+    padding: 30px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    line-height: 1.45;
+  }
+
+  .page-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .header {
+    background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+    border: 1px solid #3730a3;
+    border-radius: 14px;
+    padding: 24px 30px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .badge-tag {
+    display: inline-block;
+    background: rgba(99, 102, 241, 0.25);
+    border: 1px solid #6366f1;
+    color: #a5b4fc;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-bottom: 8px;
+  }
+
+  h1 {
+    font-size: 26px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: -0.5px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .header-right {
+    text-align: right;
+  }
+
+  .core-target-card {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.08) 0%, rgba(17, 24, 39, 0.95) 100%);
+    border: 2px solid var(--accent-blue);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 25px rgba(56, 189, 248, 0.1);
+  }
+
+  .target-title-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+
+  .target-title-bar h2 {
+    font-size: 18px;
+    color: var(--accent-blue);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .target-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 16px;
+    margin-top: 14px;
+  }
+
+  .target-stat {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  .target-stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .target-stat-value {
+    font-size: 17px;
+    font-weight: 800;
+    color: #ffffff;
+    margin-top: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .target-stat-desc {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 4px;
+  }
+
+  .section-heading {
+    font-size: 16px;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 24px 0 14px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .two-column-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .panel-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .panel-header {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .table-custom {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-top: 8px;
+  }
+
+  .table-custom th {
+    background: #1e293b;
+    color: #cbd5e1;
+    text-align: left;
+    padding: 9px 12px;
+    font-weight: 700;
+    border-bottom: 1px solid #334155;
+  }
+
+  .table-custom td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #1f2937;
+    color: #e2e8f0;
+  }
+
+  .table-custom tr:last-child td {
+    border-bottom: none;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .tag-green { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #059669; }
+  .tag-blue { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #0284c7; }
+  .tag-rose { background: rgba(244, 63, 94, 0.2); color: #fb7185; border: 1px solid #e11d48; }
+  .tag-amber { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #d97706; }
+
+  .cost-heads-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .cost-box {
+    background: #131d31;
+    border: 1px solid #233554;
+    border-radius: 10px;
+    padding: 16px;
+    position: relative;
+  }
+
+  .cost-box-num {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--accent-blue);
+    margin-bottom: 4px;
+  }
+
+  .cost-box-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 8px;
+  }
+
+  .cost-box-formula {
+    background: #0a0f1d;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: #93c5fd;
+    margin-bottom: 8px;
+    border: 1px solid #1e293b;
+  }
+
+  .cost-box-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.35;
+  }
+
+  .decision-box {
+    background: linear-gradient(135deg, #182235 0%, #0f172a 100%);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .decision-col {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .decision-title {
+    font-size: 14px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .highlight-rule {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 8px;
+    border-radius: 6px;
+    margin-top: 8px;
+  }
+
+  .rule-fix { background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #6ee7b7; }
+  .rule-hold { background: rgba(244, 63, 94, 0.15); border: 1px solid #f43f5e; color: #fda4af; }
+
+  .footer-note {
+    text-align: center;
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div>
+      <span class="badge-tag">SIH 2026 Executive Cheat Sheet</span>
+      <h1>Exactly What We Are Predicting</h1>
+      <div class="subtitle">Quick reference guide on the ML Target, Input Features, and the 4 Landed Cost Heads for SAIL</div>
+    </div>
+    <div class="header-right">
+      <div style="font-size: 12px; color: #a5b4fc; font-weight: 600;">Ministry of Steel / SAIL</div>
+      <div style="font-size: 11px; color: #64748b;">Overseas Bulk Coal Logistics</div>
+    </div>
+  </div>
+
+  <!-- THE CORE ML TARGET CARD -->
+  <div class="core-target-card">
+    <div class="target-title-bar">
+      <h2>
+        <span style="background: #0284c7; color: white; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 800;">ML TARGET</span>
+        The Future Ocean Freight Rate (Y)
+      </h2>
+      <span class="tag tag-green">Zero Data Leakage • 15-Day Forward Lookahead</span>
+    </div>
+
+    <p style="font-size: 13.5px; color: #e0f2fe; line-height: 1.5;">
+      The Machine Learning model predicts <strong>EXACTLY ONE THING</strong>: the market spot price to charter a bulk carrier vessel <strong>15 trading days in the future</strong>, expressed in <strong>US Dollars per Metric Ton ($/MT)</strong> for carrying coking coal from <strong>Gladstone (Australia) to East Coast India (Haldia/Paradip)</strong>.
+    </p>
+
+    <div class="target-grid">
+      <div class="target-stat">
+        <div class="target-stat-label">Variable Symbol</div>
+        <div class="target-stat-value" style="color: #38bdf8;">Y (Target)</div>
+        <div class="target-stat-desc">target_freight_rate_proxy(t + 15d)</div>
+      </div>
+      <div class="target-stat">
+        <div class="target-stat-label">Unit of Measurement</div>
+        <div class="target-stat-value" style="color: #34d399;">$/Metric Ton</div>
+        <div class="target-stat-desc">Typically $9.00 to $14.50 / MT</div>
+      </div>
+      <div class="target-stat">
+        <div class="target-stat-label">Forecasting Horizon</div>
+        <div class="target-stat-value" style="color: #fbbf24;">15 Trading Days</div>
+        <div class="target-stat-desc">Lookahead window for chartering</div>
+      </div>
+      <div class="target-stat">
+        <div class="target-stat-label">Validated Test Error</div>
+        <div class="target-stat-value" style="color: #f43f5e;">±$0.716 / MT</div>
+        <div class="target-stat-desc">6.68% MAPE on untouched holdout</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THE 3 PROBABILISTIC SCENARIOS -->
+  <div class="section-heading">⚡ The 3 Quantile Scenarios (P10, P50, P90)</div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 24px;">
+    <div style="background: #111e2e; border: 1px solid #1e3a5f; border-radius: 10px; padding: 14px;">
+      <div style="display: flex; justify-content: space-between;">
+        <span class="tag tag-green">P10: Optimistic Case</span>
+        <span style="font-family: 'JetBrains Mono'; font-size: 11px; color: #34d399;">10th Percentile</span>
+      </div>
+      <div style="font-size: 12px; color: #cbd5e1; margin-top: 8px;">
+        <strong>Low Market Rate:</strong> There is only a 10% chance the market rate will drop below this. Used for best-case budget lower bound.
+      </div>
+    </div>
+    <div style="background: #151b2e; border: 1px solid #283556; border-radius: 10px; padding: 14px;">
+      <div style="display: flex; justify-content: space-between;">
+        <span class="tag tag-blue">P50: Expected Base Case</span>
+        <span style="font-family: 'JetBrains Mono'; font-size: 11px; color: #38bdf8;">Median</span>
+      </div>
+      <div style="font-size: 12px; color: #cbd5e1; margin-top: 8px;">
+        <strong>Expected Most Likely Rate:</strong> The primary forecast used to compare against today's spot rate for decision making.
+      </div>
+    </div>
+    <div style="background: #231520; border: 1px solid #4c1d2e; border-radius: 10px; padding: 14px;">
+      <div style="display: flex; justify-content: space-between;">
+        <span class="tag tag-rose">P90: Worst Case / Spike</span>
+        <span style="font-family: 'JetBrains Mono'; font-size: 11px; color: #fb7185;">90th Percentile</span>
+      </div>
+      <div style="font-size: 12px; color: #cbd5e1; margin-top: 8px;">
+        <strong>Pessimistic Market Spike:</strong> 90% chance the rate stays below this. Critical for SAIL risk hedging against sudden freight surges.
+      </div>
+    </div>
+  </div>
+
+  <!-- WHAT WE PREDICT VS WHAT WE DO NOT PREDICT -->
+  <div class="two-column-grid">
+    <div class="panel-card">
+      <div class="panel-header" style="color: #38bdf8;">
+        <span>🔍</span> What ML Predicts vs. What Are Inputs (X)
+      </div>
+      <table class="table-custom">
+        <thead>
+          <tr>
+            <th>Item / Variable</th>
+            <th>Role in System</th>
+            <th>Why?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Ocean Freight ($/MT)</strong></td>
+            <td><span class="tag tag-blue">ML PREDICTED (Y)</span></td>
+            <td>Volatile ocean charter market.</td>
+          </tr>
+          <tr>
+            <td><strong>Baltic Index (BDRY)</strong></td>
+            <td><span class="tag tag-amber">Input Feature (X)</span></td>
+            <td>Historical leading indicator.</td>
+          </tr>
+          <tr>
+            <td><strong>Coal Price (FRED)</strong></td>
+            <td><span class="tag tag-amber">Input Feature (X)</span></td>
+            <td>Exogenous commodity demand.</td>
+          </tr>
+          <tr>
+            <td><strong>Bunker Fuel ($/MT)</strong></td>
+            <td><span class="tag tag-amber">Input Feature (X)</span></td>
+            <td>Ship operating cost driver.</td>
+          </tr>
+          <tr>
+            <td><strong>USD / INR Exchange</strong></td>
+            <td><span class="tag tag-amber">Input Feature (X)</span></td>
+            <td>Currency macro exposure.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel-card">
+      <div class="panel-header" style="color: #10b981;">
+        <span>⚙️</span> What Is Calculated by Math Formula
+      </div>
+      <table class="table-custom">
+        <thead>
+          <tr>
+            <th>Cost Head</th>
+            <th>Calculation Method</th>
+            <th>Formula Basis</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Voyage Days</strong></td>
+            <td><span class="tag tag-green">Physics Math</span></td>
+            <td>Distance (NM) ÷ (Speed × 24)</td>
+          </tr>
+          <tr>
+            <td><strong>Fuel Burn Cost</strong></td>
+            <td><span class="tag tag-green">Physics Math</span></td>
+            <td>Days × Daily Burn MT × $/MT</td>
+          </tr>
+          <tr>
+            <td><strong>Port Demurrage</strong></td>
+            <td><span class="tag tag-green">Contract Math</span></td>
+            <td>(Wait Days - Laytime) × Penalty $/Day</td>
+          </tr>
+          <tr>
+            <td><strong>Sandheads Lightering</strong></td>
+            <td><span class="tag tag-green">Port Tariff Math</span></td>
+            <td>Offloaded MT × $7.00/MT (Haldia)</td>
+          </tr>
+          <tr>
+            <td><strong>Total Landed Cost</strong></td>
+            <td><span class="tag tag-green">Deterministic Sum</span></td>
+            <td>Sum of all 4 cost heads ÷ Cargo MT</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- THE 4 LANDED COST HEADS FOR SAIL -->
+  <div class="section-heading">💰 The 4 Landed Cost Heads Paid by SAIL</div>
+  <div class="cost-heads-grid">
+    <div class="cost-box">
+      <div class="cost-box-num">COST HEAD #1</div>
+      <div class="cost-box-title">Base Ocean Freight</div>
+      <div class="cost-box-formula">Cargo MT × Predicted $/MT</div>
+      <div class="cost-box-desc">The core charter fee paid to shipowner. <strong>Uses the ML predicted freight rate!</strong></div>
+    </div>
+    <div class="cost-box">
+      <div class="cost-box-num">COST HEAD #2</div>
+      <div class="cost-box-title">Voyage Bunker Fuel</div>
+      <div class="cost-box-formula">Days × MT/Day × Bunker $/MT</div>
+      <div class="cost-box-desc">Marine fuel (VLSFO) burned during transit (e.g., 5,250 NM at 12.5 knots = 17.5 days).</div>
+    </div>
+    <div class="cost-box">
+      <div class="cost-box-num">COST HEAD #3</div>
+      <div class="cost-box-title">Port Demurrage Fine</div>
+      <div class="cost-box-formula">Excess Wait Days × $/Day</div>
+      <div class="cost-box-desc">Congestion penalty paid if vessel waits at port anchorage longer than contract laytime.</div>
+    </div>
+    <div class="cost-box">
+      <div class="cost-box-num">COST HEAD #4</div>
+      <div class="cost-box-title">Sandheads Lightering</div>
+      <div class="cost-box-formula">Lightered MT × $7.00/MT</div>
+      <div class="cost-box-desc">Mandatory at Haldia (8.5m draft) for large Panamax vessels (14.5m draft) before entering port.</div>
+    </div>
+  </div>
+
+  <!-- THE FINAL DECISIONS FOR SAIL -->
+  <div class="section-heading">🎯 The 2 Core Decisions Delivered to SAIL Procurement Desk</div>
+  <div class="decision-box">
+    <div class="decision-col">
+      <div class="decision-title" style="color: #38bdf8;">
+        <span>🚢</span> Decision 1: Optimal Vessel Size
+      </div>
+      <p style="font-size: 12px; color: #94a3b8; line-height: 1.4;">
+        Evaluates Handysize (35k MT), Supramax (55k MT), and Panamax (75k MT) by calculating the <strong>Total Landed Cost per MT</strong> across all 4 cost heads. It recommends the cheapest vessel class after factoring in Haldia's shallow draft lightering fees vs. bulk discounts.
+      </p>
+    </div>
+
+    <div class="decision-col">
+      <div class="decision-title" style="color: #10b981;">
+        <span>⏱️</span> Decision 2: Charter Timing (FIX NOW vs HOLD)
+      </div>
+      <p style="font-size: 12px; color: #94a3b8; line-height: 1.4;">
+        Compares <strong>Today's Spot Freight Rate</strong> against the <strong>15-day Forward Forecast (P50)</strong>:
+      </p>
+      <div class="highlight-rule rule-fix">
+        <strong>FIX NOW:</strong> Today's Rate &lt; Forecast P50 (Lock in today before rates rise).
+      </div>
+      <div class="highlight-rule rule-hold">
+        <strong>HOLD:</strong> Today's Rate &gt; Forecast P50 (Wait 15 days because rates will drop).
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    Smart India Hackathon 2026 • Ministry of Steel / SAIL Problem Statement • Intelligent Freight Forecasting & Vessel Chartering System
+  </div>
+
+</div>
+
+</body>
+</html>

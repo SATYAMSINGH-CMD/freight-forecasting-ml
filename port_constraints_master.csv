@@ -1,0 +1,5 @@
+port_name,max_draft_m,max_loa_m,max_beam_m,discharge_rate_mt_day,avg_waiting_days,lightering_cost_per_mt
+Haldia,8.5,195,32,12000,4.5,7.0
+Paradip,15.5,260,45,25000,3.0,0.0
+Vizag,17.5,300,50,35000,1.5,0.0
+Dhamra,18.0,320,50,30000,2.0,0.0

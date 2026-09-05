@@ -1,0 +1,5 @@
+vessel_class,capacity_mt,laden_draft_m,loa_m,beam_m,speed_knots,daily_fuel_burn_mt,demurrage_rate_usd_day
+Handysize,35000,10.0,180,28,12.5,18.0,16000
+Supramax,55000,12.8,199,32,12.5,24.0,20000
+Panamax,75000,14.5,229,32,12.5,28.0,24000
+Capesize,160000,18.2,292,45,12.0,45.0,32000

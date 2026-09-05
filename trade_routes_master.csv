@@ -1,0 +1,7 @@
+origin_port,destination_port,distance_nm,commodity
+Gladstone,Haldia,5250,Coking Coal
+Gladstone,Paradip,5100,Coking Coal
+Taboneo,Haldia,2150,Thermal Coal
+Taboneo,Paradip,2000,Thermal Coal
+Norfolk,Haldia,9800,Met Coal
+Norfolk,Paradip,9650,Met Coal
