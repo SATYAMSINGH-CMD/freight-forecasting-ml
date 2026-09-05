@@ -85,13 +85,16 @@ $$\text{subject to} \quad \sum x_{v, p, t} \cdot \text{Capacity}_v \ge D_{\text{
 
 ## 📈 Historical Backtest Simulation
 
-Simulated across **91 daily chartering decisions** on the untouched holdout test set:
+Simulated across **417 daily chartering decisions** over the untouched holdout test set (spanning 2024 to 2026):
 
 ![Cumulative Net Savings Backtest](backtest_cumulative_savings.png)
 
-* **Fix Decisions**: 44
-* **Hold Decisions**: 47
-* **Verified Net Dollar Savings for SAIL**: **`+$537,000.00`**
+* **Dataset Span**: **2,126 trading days (~8.5 years)** from BDRY inception (March 22, 2018) to September 2026.
+* **Test Horizon**: 417 trading days holdout evaluation.
+* **Test MAE**: **$0.603 / MT** | **MAPE: 7.16%** | **$R^2$: 0.7911**.
+* **Fix Decisions**: 351
+* **Hold Decisions**: 66
+* **Verified Net Dollar Savings for SAIL**: **`+$378,750.00`**
 
 ---
 
@@ -99,8 +102,9 @@ Simulated across **91 daily chartering decisions** on the untouched holdout test
 
 ```
 freight-forecasting/
-├── collect_v1_data.py                  # Ingests Yahoo Finance (BDRY, Brent, USDINR) & FRED Australian Coal
-├── market_features_daily.csv           # Cleaned 500-day unified market database
+├── collect_v1_data.py                  # Ingests Yahoo Finance (BDRY, Brent, USDINR) & FRED Australian Coal (2018-2026)
+├── market_features_daily.csv           # Cleaned 2,126-day unified market database (8.5 years)
+├── market_features_daily_500d.csv      # Backup of initial 500-day slice
 ├── vessel_fleet_master.csv             # Static specs: Handysize, Supramax, Panamax, Capesize
 ├── port_constraints_master.csv         # Draft, LOA, beam, discharge rate, lightering fee (Haldia/Paradip/Vizag/Dhamra)
 ├── trade_routes_master.csv             # Nautical distances (Gladstone, Taboneo, Norfolk, Richards Bay)
@@ -114,6 +118,9 @@ freight-forecasting/
 │   └── quantile_production_bundle.pkl  # Trained production LightGBM model & calibrated residual quantiles
 │
 ├── 04_optimizer.py                     # Single-voyage decision, SciPy HiGHS MILP solver & backtest simulator
+├── inference_service.py                # High-level clean Python inference API for backend integration
+├── api_server.py                       # Production FastAPI REST microservice with Swagger docs (/docs)
+├── BACKEND_INTEGRATION_GUIDE.md        # Full integration manual, JSON schemas, & Node.js/Express examples
 │
 ├── what_are_we_predicting.pdf          # 1-page executive cheat sheet PDF
 ├── what_are_we_predicting.png          # High-resolution cheat sheet image

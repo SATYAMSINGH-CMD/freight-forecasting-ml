@@ -390,10 +390,10 @@ class FreightOptimizer:
             true_rate_15d_later = float(row["actual_freight_rate"])
             
             # Decision Rule:
-            # If Model expects rate to drop by more than $0.20/MT -> HOLD; else FIX NOW
+            # If Model expects rate to drop by more than $0.60/MT (exceeding model noise floor MAE) -> HOLD; else FIX NOW
             expected_change = pred_15d_p50 - true_spot_today
             
-            if expected_change < -0.20:
+            if expected_change < -0.60:
                 decision = "HOLD"
                 # If we hold, we pay the rate 15 days later
                 cost_paid = true_rate_15d_later * cargo_mt

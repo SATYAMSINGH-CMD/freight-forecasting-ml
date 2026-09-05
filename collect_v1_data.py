@@ -14,12 +14,9 @@ def build_v1_database():
 
     # 1. Pull BDRY (Dry Bulk ETF), BZ=F (Brent Crude), INR=X (USD/INR)
     tickers = ["BDRY", "BZ=F", "INR=X"]
-    print(f"Downloading tickers from Yahoo Finance: {tickers}...")
+    print(f"Downloading tickers from Yahoo Finance (full history): {tickers}...")
     
-    end_date = datetime.date.today()
-    start_date = end_date - datetime.timedelta(days=750)
-    
-    df_market = yf.download(tickers, start=start_date.strftime("%Y-%m-%d"), end=end_date.strftime("%Y-%m-%d"), progress=False)
+    df_market = yf.download(tickers, period="max", progress=False)
     
     # Handle multi-level columns from yfinance
     if isinstance(df_market.columns, pd.MultiIndex):
@@ -33,6 +30,9 @@ def build_v1_database():
         "BZ=F": "brent_crude",
         "INR=X": "usd_inr"
     })
+    
+    # Filter to start from BDRY inception date (March 22, 2018)
+    df_close = df_close.dropna(subset=["bdry_close"]).copy()
     
     print(f"Retrieved {len(df_close)} daily rows from Yahoo Finance ({df_close.index.min().date()} to {df_close.index.max().date()}).")
 
@@ -51,7 +51,7 @@ def build_v1_database():
         print(f"FRED Coal records retrieved: {len(df_coal)} historical monthly observations (latest: ${df_coal['coal_price_aus'].iloc[-1]:.2f}/MT).")
     except Exception as e:
         print(f"Notice: FRED API error: {e}. Using cached benchmark series.")
-        dates = pd.date_range(start="2022-01-01", end="2026-12-31", freq="MS")
+        dates = pd.date_range(start="2018-01-01", end="2026-12-31", freq="MS")
         synthetic_coal = 145.0 + 25.0 * np.sin(np.linspace(0, 3 * np.pi, len(dates)))
         df_coal = pd.DataFrame({"coal_price_aus": synthetic_coal}, index=dates)
 
@@ -62,8 +62,8 @@ def build_v1_database():
     df_merged["usd_inr"] = df_merged["usd_inr"].ffill().bfill()
     df_merged["bdry_close"] = df_merged["bdry_close"].ffill().bfill()
 
-    # Slice the most recent 500 trading days
-    df_500 = df_merged.tail(500).copy()
+    # Utilize all available historical trading days (2,126 rows from 2018 to present)
+    df_all = df_merged.copy()
     
     print("=" * 75)
     print("STEP 2: COMPUTING PROXIES & CALIBRATING TARGET ROUTE FREIGHT RATE")
@@ -72,12 +72,12 @@ def build_v1_database():
     # A. Bunker Fuel Price Proxy ($/MT VLSFO)
     # 1 metric ton of crude oil ~ 7.33 barrels. 
     # VLSFO = (7.33 * Brent Crude) + Refining/Desulfurization Spread (~$95/MT)
-    df_500["bunker_price_proxy"] = np.round((7.33 * df_500["brent_crude"]) + 95.0, 2)
+    df_all["bunker_price_proxy"] = np.round((7.33 * df_all["brent_crude"]) + 95.0, 2)
 
     # B. Calibrated Baltic Panamax Daily Hire & Index Proxy
     # BDRY historical base: ~$8-$12 maps to BPI ~1,400-2,000 points (~$12,500 - $18,000/day hire)
-    df_500["bdi_proxy"] = np.round(df_500["bdry_close"] * 155.0, 1)
-    df_500["bpi_daily_hire_proxy"] = np.round(df_500["bdry_close"] * 1450.0, 1) # $/day hire
+    df_all["bdi_proxy"] = np.round(df_all["bdry_close"] * 155.0, 1)
+    df_all["bpi_daily_hire_proxy"] = np.round(df_all["bdry_close"] * 1450.0, 1) # $/day hire
 
     # C. Target Route Freight Rate Proxy ($/MT for Gladstone -> Indian East Coast)
     # Panamax 75,000 MT: 5,250 NM @ 12.5 kts = 17.5 sea days + 5 port days = 22.5 voyage days
@@ -87,15 +87,15 @@ def build_v1_database():
     cargo_mt = 75000.0
     daily_burn_mt = 28.0
     
-    hire_cost = df_500["bpi_daily_hire_proxy"] * voyage_days
-    bunker_cost = sea_days * daily_burn_mt * df_500["bunker_price_proxy"]
+    hire_cost = df_all["bpi_daily_hire_proxy"] * voyage_days
+    bunker_cost = sea_days * daily_burn_mt * df_all["bunker_price_proxy"]
     
     # Resulting $/MT freight rate
-    df_500["target_freight_rate_proxy"] = np.round((hire_cost + bunker_cost) / cargo_mt, 2)
+    df_all["target_freight_rate_proxy"] = np.round((hire_cost + bunker_cost) / cargo_mt, 2)
     
     # Calendar features
-    df_500["date"] = df_500.index.strftime("%Y-%m-%d")
-    df_500["month"] = df_500.index.month
+    df_all["date"] = df_all.index.strftime("%Y-%m-%d")
+    df_all["month"] = df_all.index.month
 
     # Final ordered columns
     final_cols = [
@@ -110,7 +110,7 @@ def build_v1_database():
         "usd_inr",
         "target_freight_rate_proxy"
     ]
-    df_v1 = df_500[final_cols].reset_index(drop=True)
+    df_v1 = df_all[final_cols].reset_index(drop=True)
     
     market_file = os.path.join(output_dir, "market_features_daily.csv")
     df_v1.to_csv(market_file, index=False)
