@@ -1,0 +1,82 @@
+Scheme,Fold,Model,MAE ($/MT),MAPE (%),RMSE ($/MT),Directional Accuracy (%),Accuracy (±10%),Max Outlier Miss ($/MT)
+Scheme 1 (Anchor Walk-Forward),Fold 1,LightGBM (Solo Baseline),1.132,14.59,1.282,41.54,29.97,3.097
+Scheme 1 (Anchor Walk-Forward),Fold 1,Hybrid: LightGBM + TCN,0.761,9.65,0.911,59.05,52.23,2.735
+Scheme 1 (Anchor Walk-Forward),Fold 1,Hybrid: LightGBM + PatchTST,1.083,13.52,1.246,57.27,29.97,2.944
+Scheme 1 (Anchor Walk-Forward),Fold 1,Hybrid: LightGBM + Bi-LSTM,0.774,9.66,0.927,58.46,54.01,2.376
+Scheme 1 (Anchor Walk-Forward),Fold 1,Hybrid: LightGBM + Uni-LSTM,0.883,11.01,1.076,58.16,48.66,2.781
+Scheme 1 (Anchor Walk-Forward),Fold 1,TCN (Solo Causal),1.42,17.280000686645508,1.609,56.97,17.21,3.377
+Scheme 1 (Anchor Walk-Forward),Fold 1,PatchTST (Solo Transformer),2.302,28.1299991607666,2.504,56.97,0.0,4.61
+Scheme 1 (Anchor Walk-Forward),Fold 1,Bi-LSTM (Solo Attention),1.555,18.700000762939453,1.84,56.68,24.63,4.089
+Scheme 1 (Anchor Walk-Forward),Fold 1,Uni-LSTM (Solo Attention),1.784,21.59000015258789,2.113,56.68,18.99,5.035
+Scheme 1 (Anchor Walk-Forward),Fold 2,LightGBM (Solo Baseline),0.767,8.67,0.969,55.59,60.25,2.638
+Scheme 1 (Anchor Walk-Forward),Fold 2,Hybrid: LightGBM + TCN,0.762,8.82,0.914,59.01,60.25,2.36
+Scheme 1 (Anchor Walk-Forward),Fold 2,Hybrid: LightGBM + PatchTST,0.793,8.76,1.018,58.7,63.98,2.919
+Scheme 1 (Anchor Walk-Forward),Fold 2,Hybrid: LightGBM + Bi-LSTM,0.803,8.64,1.054,61.8,61.8,2.895
+Scheme 1 (Anchor Walk-Forward),Fold 2,Hybrid: LightGBM + Uni-LSTM,0.751,8.21,1.018,60.87,67.7,3.161
+Scheme 1 (Anchor Walk-Forward),Fold 2,TCN (Solo Causal),0.908,10.449999809265137,1.038,58.7,49.69,2.405
+Scheme 1 (Anchor Walk-Forward),Fold 2,PatchTST (Solo Transformer),1.034,11.15999984741211,1.311,63.66,48.76,3.859
+Scheme 1 (Anchor Walk-Forward),Fold 2,Bi-LSTM (Solo Attention),1.033,10.699999809265137,1.349,66.46,51.55,3.461
+Scheme 1 (Anchor Walk-Forward),Fold 2,Uni-LSTM (Solo Attention),0.897,9.350000381469727,1.301,67.08,66.15,3.978
+Scheme 1 (Anchor Walk-Forward),Fold 3,LightGBM (Solo Baseline),0.683,7.61,0.845,51.55,74.53,2.736
+Scheme 1 (Anchor Walk-Forward),Fold 3,Hybrid: LightGBM + TCN,0.956,10.46,1.123,33.85,48.76,2.617
+Scheme 1 (Anchor Walk-Forward),Fold 3,Hybrid: LightGBM + PatchTST,0.778,8.83,0.933,47.83,64.6,2.856
+Scheme 1 (Anchor Walk-Forward),Fold 3,Hybrid: LightGBM + Bi-LSTM,0.743,8.48,0.894,49.69,69.57,2.705
+Scheme 1 (Anchor Walk-Forward),Fold 3,Hybrid: LightGBM + Uni-LSTM,0.758,8.92,0.911,53.73,61.49,2.896
+Scheme 1 (Anchor Walk-Forward),Fold 3,TCN (Solo Causal),1.313,14.40999984741211,1.509,31.37,23.29,3.454
+Scheme 1 (Anchor Walk-Forward),Fold 3,PatchTST (Solo Transformer),0.932,10.710000038146973,1.155,48.76,48.45,2.976
+Scheme 1 (Anchor Walk-Forward),Fold 3,Bi-LSTM (Solo Attention),0.839,9.720000267028809,1.021,49.69,54.66,2.674
+Scheme 1 (Anchor Walk-Forward),Fold 3,Uni-LSTM (Solo Attention),0.948,11.470000267028809,1.163,51.86,45.03,3.056
+Scheme 2 (Macro-Regime Folds),Regime 1 (Commodity Supercycle),LightGBM (Solo Baseline),1.793,11.48,2.296,63.83,48.09,6.087
+Scheme 2 (Macro-Regime Folds),Regime 1 (Commodity Supercycle),Hybrid: LightGBM + TCN,1.743,11.5,2.219,62.13,48.09,5.822
+Scheme 2 (Macro-Regime Folds),Regime 1 (Commodity Supercycle),Hybrid: LightGBM + PatchTST,1.323,8.51,1.776,69.79,66.38,5.979
+Scheme 2 (Macro-Regime Folds),Regime 1 (Commodity Supercycle),Hybrid: LightGBM + Bi-LSTM,1.639,11.03,2.046,55.74,52.34,6.052
+Scheme 2 (Macro-Regime Folds),Regime 1 (Commodity Supercycle),Hybrid: LightGBM + Uni-LSTM,1.652,10.94,2.208,62.13,56.17,7.279
+Scheme 2 (Macro-Regime Folds),Regime 1 (Commodity Supercycle),TCN (Solo Causal),2.065,13.9399995803833,2.709,55.32,44.26,8.49
+Scheme 2 (Macro-Regime Folds),Regime 1 (Commodity Supercycle),PatchTST (Solo Transformer),1.518,10.329999923706055,1.906,72.77,55.32,5.875
+Scheme 2 (Macro-Regime Folds),Regime 1 (Commodity Supercycle),Bi-LSTM (Solo Attention),2.04,14.4399995803833,2.42,53.62,41.7,6.016
+Scheme 2 (Macro-Regime Folds),Regime 1 (Commodity Supercycle),Uni-LSTM (Solo Attention),1.711,11.850000381469727,2.436,63.4,59.57,8.591
+Scheme 2 (Macro-Regime Folds),Regime 2 (Ukraine War Shock),LightGBM (Solo Baseline),1.02,12.53,1.182,43.06,43.33,3.175
+Scheme 2 (Macro-Regime Folds),Regime 2 (Ukraine War Shock),Hybrid: LightGBM + TCN,0.702,8.39,0.894,56.94,63.61,2.434
+Scheme 2 (Macro-Regime Folds),Regime 2 (Ukraine War Shock),Hybrid: LightGBM + PatchTST,0.708,7.9,1.004,62.78,70.0,3.43
+Scheme 2 (Macro-Regime Folds),Regime 2 (Ukraine War Shock),Hybrid: LightGBM + Bi-LSTM,0.671,7.83,0.877,52.5,66.39,2.525
+Scheme 2 (Macro-Regime Folds),Regime 2 (Ukraine War Shock),Hybrid: LightGBM + Uni-LSTM,0.829,9.51,1.105,54.72,58.61,3.328
+Scheme 2 (Macro-Regime Folds),Regime 2 (Ukraine War Shock),TCN (Solo Causal),1.146,14.600000381469727,1.421,55.83,44.44,2.883
+Scheme 2 (Macro-Regime Folds),Regime 2 (Ukraine War Shock),PatchTST (Solo Transformer),1.329,15.239999771118164,1.644,59.44,31.39,4.586
+Scheme 2 (Macro-Regime Folds),Regime 2 (Ukraine War Shock),Bi-LSTM (Solo Attention),0.767,8.609999656677246,0.963,53.89,63.61,2.93
+Scheme 2 (Macro-Regime Folds),Regime 2 (Ukraine War Shock),Uni-LSTM (Solo Attention),1.095,11.970000267028809,1.57,61.39,55.56,4.532
+Scheme 2 (Macro-Regime Folds),Regime 3 (Red Sea Crisis),LightGBM (Solo Baseline),0.544,6.56,0.717,58.12,75.51,2.538
+Scheme 2 (Macro-Regime Folds),Regime 3 (Red Sea Crisis),Hybrid: LightGBM + TCN,0.584,7.62,0.71,62.47,72.54,1.97
+Scheme 2 (Macro-Regime Folds),Regime 3 (Red Sea Crisis),Hybrid: LightGBM + PatchTST,0.776,8.71,1.048,48.97,61.56,3.271
+Scheme 2 (Macro-Regime Folds),Regime 3 (Red Sea Crisis),Hybrid: LightGBM + Bi-LSTM,0.475,5.69,0.657,60.41,80.55,2.509
+Scheme 2 (Macro-Regime Folds),Regime 3 (Red Sea Crisis),Hybrid: LightGBM + Uni-LSTM,0.571,6.67,0.774,56.06,73.46,2.546
+Scheme 2 (Macro-Regime Folds),Regime 3 (Red Sea Crisis),TCN (Solo Causal),0.962,12.210000038146973,1.113,63.16,41.42,2.787
+Scheme 2 (Macro-Regime Folds),Regime 3 (Red Sea Crisis),PatchTST (Solo Transformer),1.141,12.65999984741211,1.627,45.08,50.57,5.553
+Scheme 2 (Macro-Regime Folds),Regime 3 (Red Sea Crisis),Bi-LSTM (Solo Attention),0.502,5.989999771118164,0.692,59.04,82.15,2.481
+Scheme 2 (Macro-Regime Folds),Regime 3 (Red Sea Crisis),Uni-LSTM (Solo Attention),0.768,8.979999542236328,1.025,50.34,65.45,3.063
+Scheme 3 (Tri-Split Block Validation),Transition 1 (Block 1 -> Block 2),LightGBM (Solo Baseline),1.64,13.01,2.202,47.08,40.79,8.754
+Scheme 3 (Tri-Split Block Validation),Transition 1 (Block 1 -> Block 2),Hybrid: LightGBM + TCN,1.275,10.4,1.833,56.29,56.73,7.487
+Scheme 3 (Tri-Split Block Validation),Transition 1 (Block 1 -> Block 2),Hybrid: LightGBM + PatchTST,1.712,12.89,2.312,55.7,41.08,9.186
+Scheme 3 (Tri-Split Block Validation),Transition 1 (Block 1 -> Block 2),Hybrid: LightGBM + Bi-LSTM,1.907,15.06,2.45,55.41,28.8,8.679
+Scheme 3 (Tri-Split Block Validation),Transition 1 (Block 1 -> Block 2),Hybrid: LightGBM + Uni-LSTM,2.257,17.58,2.808,54.39,17.98,9.356
+Scheme 3 (Tri-Split Block Validation),Transition 1 (Block 1 -> Block 2),TCN (Solo Causal),2.212,19.18000030517578,3.312,53.07,39.62,14.767
+Scheme 3 (Tri-Split Block Validation),Transition 1 (Block 1 -> Block 2),PatchTST (Solo Transformer),2.167,17.559999465942383,2.692,59.21,27.19,9.618
+Scheme 3 (Tri-Split Block Validation),Transition 1 (Block 1 -> Block 2),Bi-LSTM (Solo Attention),2.603,22.389999389648438,3.093,55.7,13.01,8.604
+Scheme 3 (Tri-Split Block Validation),Transition 1 (Block 1 -> Block 2),Uni-LSTM (Solo Attention),3.313,27.530000686645508,3.754,53.36,2.78,9.958
+Scheme 3 (Tri-Split Block Validation),Transition 2 (Block 2 -> Block 3),LightGBM (Solo Baseline),0.797,8.64,1.053,51.75,61.84,3.091
+Scheme 3 (Tri-Split Block Validation),Transition 2 (Block 2 -> Block 3),Hybrid: LightGBM + TCN,0.891,10.82,1.021,56.43,46.49,2.423
+Scheme 3 (Tri-Split Block Validation),Transition 2 (Block 2 -> Block 3),Hybrid: LightGBM + PatchTST,1.351,14.27,1.732,48.68,40.06,4.752
+Scheme 3 (Tri-Split Block Validation),Transition 2 (Block 2 -> Block 3),Hybrid: LightGBM + Bi-LSTM,1.119,11.87,1.413,47.37,48.83,3.811
+Scheme 3 (Tri-Split Block Validation),Transition 2 (Block 2 -> Block 3),Hybrid: LightGBM + Uni-LSTM,1.017,10.86,1.339,49.42,47.51,3.893
+Scheme 3 (Tri-Split Block Validation),Transition 2 (Block 2 -> Block 3),TCN (Solo Causal),1.252,16.270000457763672,1.463,63.45,39.91,3.058
+Scheme 3 (Tri-Split Block Validation),Transition 2 (Block 2 -> Block 3),PatchTST (Solo Transformer),2.005,21.25,2.509,46.78,23.83,6.429
+Scheme 3 (Tri-Split Block Validation),Transition 2 (Block 2 -> Block 3),Bi-LSTM (Solo Attention),1.541,16.469999313354492,1.868,46.05,24.71,4.541
+Scheme 3 (Tri-Split Block Validation),Transition 2 (Block 2 -> Block 3),Uni-LSTM (Solo Attention),1.286,13.710000038146973,1.67,54.09,40.94,4.705
+Scheme 3 (Tri-Split Block Validation),Transition 3 (Blocks 1+2 -> Block 3),LightGBM (Solo Baseline),0.845,9.22,1.101,49.85,56.58,2.951
+Scheme 3 (Tri-Split Block Validation),Transition 3 (Blocks 1+2 -> Block 3),Hybrid: LightGBM + TCN,0.867,9.2,1.2,52.92,60.23,3.392
+Scheme 3 (Tri-Split Block Validation),Transition 3 (Blocks 1+2 -> Block 3),Hybrid: LightGBM + PatchTST,0.93,10.19,1.205,51.32,54.97,3.255
+Scheme 3 (Tri-Split Block Validation),Transition 3 (Blocks 1+2 -> Block 3),Hybrid: LightGBM + Bi-LSTM,0.994,10.75,1.263,49.42,50.58,3.315
+Scheme 3 (Tri-Split Block Validation),Transition 3 (Blocks 1+2 -> Block 3),Hybrid: LightGBM + Uni-LSTM,0.84,9.23,1.082,51.61,59.36,3.433
+Scheme 3 (Tri-Split Block Validation),Transition 3 (Blocks 1+2 -> Block 3),TCN (Solo Causal),1.038,10.890000343322754,1.438,54.97,58.48,4.39
+Scheme 3 (Tri-Split Block Validation),Transition 3 (Blocks 1+2 -> Block 3),PatchTST (Solo Transformer),1.136,12.539999961853027,1.473,51.61,47.37,4.118
+Scheme 3 (Tri-Split Block Validation),Transition 3 (Blocks 1+2 -> Block 3),Bi-LSTM (Solo Attention),1.292,14.140000343322754,1.573,46.93,34.8,4.259
+Scheme 3 (Tri-Split Block Validation),Transition 3 (Blocks 1+2 -> Block 3),Uni-LSTM (Solo Attention),1.01,11.180000305175781,1.321,51.75,46.64,4.602
