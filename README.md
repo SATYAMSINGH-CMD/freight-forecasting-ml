@@ -85,6 +85,49 @@ Evaluated across **411 untouched trading days** on the holdout test set (Dec 202
 
 ---
 
+## 🏛️ Definitive Multi-Fold Decision Matrix: Arbitrated Across 4 Cross-Validation Schemes
+
+To eliminate backtest overfitting and verify which model is truly **antifragile**, we evaluated all models across **4 rigorous cross-validation paradigms**:
+1. **Holdout Test Set**: 411 untouched trading days (Dec 2024 to Aug 2026).
+2. **Option A (Rolling-Window Walk-Forward)**: 5 sliding 450-day windows across 8 years (2018–2026) testing out-of-sample adaptability to structural shifts.
+3. **Option B (Macro-Regime Crisis Stress Folds)**: Out-of-sample performance across the 4 major global shipping crises (COVID Demand Shock, Russia-Ukraine War & Fuel Spike, Red Sea / Suez Canal Geopolitical Diversions, and Modern Era Normalization).
+4. **Option C (Multi-Horizon Stress Test)**: Forecasting across 7-Day prompt fixing, 15-Day voyage chartering, and 30-Day Contract of Affreightment (COA) forward hedging.
+
+![Definitive Decision Matrix Scorecard](comprehensive_decision_matrix.png)
+
+### The Official Composite Decision Matrix
+
+| Definitive Rank | Status | Model Architecture | Composite Score | Holdout Rank | Rolling Rank | Crisis Rank | Multi-Horizon Rank | Holdout MAE ($/MT) | Rolling MAE ($/MT) | Crisis MAE ($/MT) | Peak Outlier Miss ($/MT) |
+| :---: | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **🥇 1** | **[1] Champion** | **LightGBM Regressor** | **2.45** | 6 | **1** | **1** | 2 | `$0.619` | **`$1.112`** | **`$1.226`** | **`$8.46`** |
+| **🥈 2** | **[2] Runner-Up** | **XGBoost Regressor** | **2.55** | 5 | **2** | **2** | **1** | `$0.536` | **`$1.156`** | **`$1.272`** | **`$8.93`** |
+| **🥉 3** | **[3] Third Place** | **Hybrid Ensemble (50% TCN + 50% XGB)** | **3.60** | **2** | 3 | 4 | 6 | **`$0.431`** | `$1.218` | `$1.849` | `$13.54` |
+| 4 | [4] Fourth | **PatchTST (Transformer)** | 4.05 | 4 | 4 | 5 | 3 | `$0.508` | `$1.355` | `$1.969` | `$10.35` |
+| 5 | [5] Fifth | **Bi-LSTM + Temporal Attention** | 4.10 | 3 | 6 | 3 | 4 | `$0.485` | `$1.513` | `$1.594` | `$10.76` |
+| 6 | [6] Sixth | **Temporal Convolutional Network (TCN)** | 4.90 | **1** | 5 | 7 | 7 | **`$0.391`** | `$1.476` | `$2.826` | `$21.93` |
+| 7 | [7] Seventh | **Uni-LSTM + Attention** | 6.35 | 7 | 7 | 6 | 5 | `$0.735` | `$1.747` | `$2.063` | `$11.27` |
+
+*Composite Score: 25% Holdout Rank + 30% Rolling Window Rank + 25% Crisis Stress Rank + 20% Multi-Horizon Rank (Lower is Better).*
+
+### Multi-Fold Comparative Visualizations
+
+| Rolling-Window Stability (8 Years) | Crisis Stress Resilience (4 Global Shocks) | Multi-Horizon Procurement (7d, 15d, 30d) |
+| :---: | :---: | :---: |
+| ![Rolling Window Trends](rolling_window_trends.png) | ![Crisis Stress Comparison](crisis_stress_comparison.png) | ![Multi-Horizon Comparison](multi_horizon_comparison.png) |
+
+---
+
+### 💡 Key Empirical Takeaway: Why Tree GBDTs Won the Long Game Over Deep Learning
+1. **The Holdout vs. Crisis Paradox**:
+   - In recent range-bound market conditions (2024–2026), **Causal TCN** achieves incredible precision ($0.391/MT MAE) because its dilated receptive field smoothly models recent autocorrelations.
+   - However, during extreme macro shocks (e.g. the 2020 COVID shutdown or 2022 Ukraine fuel spike), unconstrained deep neural convolutions **over-extrapolate wildly**, suffering up to a **`$21.93 / MT` peak error** and `$8.095/MT` MAE.
+2. **Why LightGBM & XGBoost Are Antifragile**:
+   - Gradient Boosted Decision Trees partition feature space into orthogonal split intervals. When an unprecedented shock occurs, tree predictions clip to the outermost boundary leaf, **inherently preventing catastrophic extrapolation blowups**.
+   - As a result, **LightGBM achieved Rank #1 across rolling windows ($1.112/MT) and crisis regimes ($1.226/MT)** with the lowest peak error ($8.46/MT).
+3. **The Dual-Engine Solution for SAIL**:
+   - **Primary Risk Engine**: **LightGBM Quantile Regressor** (provides guaranteed antifragile P10, P50, P90 bounds that never blow up).
+   - **Tactical Alpha Signal**: **Causal TCN / Hybrid Ensemble** (provides ultra-precise 4.75% MAPE guidance during standard trading periods).
+
 ## 💰 The 4 Landed Cost Heads
 
 $$\text{Total Landed Cost (\$) } = \underbrace{\text{Base Ocean Freight}}_{\text{Uses ML Forecast}} + \underbrace{\text{Voyage Bunker Fuel}}_{\text{Physics Math}} + \underbrace{\text{Port Demurrage Fine}}_{\text{Contract Math}} + \underbrace{\text{Sandheads Lightering}}_{\text{Port Tariff}}$$

@@ -1,0 +1,8 @@
+Definitive Final Rank,Status,Model,Composite Score,Holdout Rank,Rolling Rank,Crisis Rank,Multi-Horizon Rank,Holdout MAE ($/MT),Rolling MAE ($/MT),Crisis MAE ($/MT),Peak Miss ($/MT)
+1,[1] Champion,LightGBM,2.45,6,1,1,2,0.619,1.112,1.226,8.46
+2,[2] Runner-Up,XGBoost,2.55,5,2,2,1,0.536,1.156,1.272,8.93
+3,[3] Third Place,Hybrid Ensemble,3.6,2,3,4,6,0.431,1.218,1.849,13.54
+4,[4] Fourth,PatchTST,4.05,4,4,5,3,0.508,1.355,1.969,10.35
+5,[5] Fifth,Bi-LSTM + Attention,4.1,3,6,3,4,0.485,1.513,1.594,10.76
+6,[6] Sixth,TCN,4.9,1,5,7,7,0.391,1.476,2.826,21.93
+7,[7] Seventh,Uni-LSTM + Attention,6.35,7,7,6,5,0.735,1.747,2.063,11.27
