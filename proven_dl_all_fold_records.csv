@@ -1,0 +1,46 @@
+Scheme,Fold,Model,MAE ($/MT),MAPE (%),RMSE ($/MT),Directional Accuracy (%),Accuracy (±10%),Max Outlier Miss ($/MT)
+Scheme 1 (Expanding Anchor Walk-Forward),Fold 1,TCN (Causal),1.42,17.280000686645508,1.609,56.97,17.21,3.377
+Scheme 1 (Expanding Anchor Walk-Forward),Fold 1,PatchTST (Transformer),2.302,28.1299991607666,2.504,56.97,0.0,4.61
+Scheme 1 (Expanding Anchor Walk-Forward),Fold 1,Uni-LSTM + Attention (Causal),1.784,21.59000015258789,2.113,56.68,18.99,5.035
+Scheme 1 (Expanding Anchor Walk-Forward),Fold 1,Bi-LSTM + Attention (Retrospective),1.555,18.700000762939453,1.84,56.68,24.63,4.089
+Scheme 1 (Expanding Anchor Walk-Forward),Fold 1,LightGBM (Baseline Reference),1.132,14.59,1.282,41.54,29.97,3.097
+Scheme 1 (Expanding Anchor Walk-Forward),Fold 2,TCN (Causal),0.908,10.449999809265137,1.038,58.7,49.69,2.405
+Scheme 1 (Expanding Anchor Walk-Forward),Fold 2,PatchTST (Transformer),1.034,11.15999984741211,1.311,63.66,48.76,3.859
+Scheme 1 (Expanding Anchor Walk-Forward),Fold 2,Uni-LSTM + Attention (Causal),0.897,9.350000381469727,1.301,67.08,66.15,3.978
+Scheme 1 (Expanding Anchor Walk-Forward),Fold 2,Bi-LSTM + Attention (Retrospective),1.033,10.699999809265137,1.349,66.46,51.55,3.461
+Scheme 1 (Expanding Anchor Walk-Forward),Fold 2,LightGBM (Baseline Reference),0.767,8.67,0.969,55.59,60.25,2.638
+Scheme 1 (Expanding Anchor Walk-Forward),Fold 3,TCN (Causal),1.313,14.40999984741211,1.509,31.37,23.29,3.454
+Scheme 1 (Expanding Anchor Walk-Forward),Fold 3,PatchTST (Transformer),0.932,10.710000038146973,1.155,48.76,48.45,2.976
+Scheme 1 (Expanding Anchor Walk-Forward),Fold 3,Uni-LSTM + Attention (Causal),0.948,11.470000267028809,1.163,51.86,45.03,3.056
+Scheme 1 (Expanding Anchor Walk-Forward),Fold 3,Bi-LSTM + Attention (Retrospective),0.839,9.720000267028809,1.021,49.69,54.66,2.674
+Scheme 1 (Expanding Anchor Walk-Forward),Fold 3,LightGBM (Baseline Reference),0.683,7.61,0.845,51.55,74.53,2.736
+Scheme 2 (Macro-Regime Folds),Regime 1,TCN (Causal),2.214,13.4399995803833,2.81,54.26,46.28,7.088
+Scheme 2 (Macro-Regime Folds),Regime 1,PatchTST (Transformer),1.505,8.989999771118164,2.026,71.28,61.7,6.486
+Scheme 2 (Macro-Regime Folds),Regime 1,Uni-LSTM + Attention (Causal),1.985,11.359999656677246,2.759,63.83,54.26,8.798
+Scheme 2 (Macro-Regime Folds),Regime 1,Bi-LSTM + Attention (Retrospective),1.813,10.59000015258789,2.341,62.77,54.79,6.781
+Scheme 2 (Macro-Regime Folds),Regime 1,LightGBM (Baseline Reference),2.027,12.05,2.501,55.32,43.09,6.154
+Scheme 2 (Macro-Regime Folds),Regime 2,TCN (Causal),1.73,22.260000228881836,2.022,38.38,26.61,3.682
+Scheme 2 (Macro-Regime Folds),Regime 2,PatchTST (Transformer),1.479,17.049999237060547,1.832,61.34,33.33,5.328
+Scheme 2 (Macro-Regime Folds),Regime 2,Uni-LSTM + Attention (Causal),1.539,17.75,1.819,56.86,29.13,4.658
+Scheme 2 (Macro-Regime Folds),Regime 2,Bi-LSTM + Attention (Retrospective),2.725,31.6299991607666,3.165,50.7,0.28,8.328
+Scheme 2 (Macro-Regime Folds),Regime 2,LightGBM (Baseline Reference),1.192,14.28,1.446,38.66,33.89,5.495
+Scheme 2 (Macro-Regime Folds),Regime 3,TCN (Causal),0.626,7.050000190734863,0.783,62.32,75.93,2.425
+Scheme 2 (Macro-Regime Folds),Regime 3,PatchTST (Transformer),1.201,12.779999732971191,1.661,51.15,54.87,4.754
+Scheme 2 (Macro-Regime Folds),Regime 3,Uni-LSTM + Attention (Causal),1.228,13.039999961853027,1.593,48.71,46.7,4.331
+Scheme 2 (Macro-Regime Folds),Regime 3,Bi-LSTM + Attention (Retrospective),1.031,10.869999885559082,1.315,48.71,51.43,3.792
+Scheme 2 (Macro-Regime Folds),Regime 3,LightGBM (Baseline Reference),0.844,9.25,1.091,49.57,55.44,2.903
+Scheme 3 (Tri-Split Block Validation),Transition 1,TCN (Causal),1.997,18.790000915527344,2.509,56.14,31.87,10.136
+Scheme 3 (Tri-Split Block Validation),Transition 1,PatchTST (Transformer),2.46,19.760000228881836,2.981,57.89,21.05,9.831
+Scheme 3 (Tri-Split Block Validation),Transition 1,Uni-LSTM + Attention (Causal),3.691,33.060001373291016,3.984,53.22,2.92,9.149
+Scheme 3 (Tri-Split Block Validation),Transition 1,Bi-LSTM + Attention (Retrospective),2.833,22.549999237060547,3.418,53.22,16.08,10.436
+Scheme 3 (Tri-Split Block Validation),Transition 1,LightGBM (Baseline Reference),1.64,13.01,2.202,47.08,40.79,8.754
+Scheme 3 (Tri-Split Block Validation),Transition 2,TCN (Causal),1.633,21.149999618530273,1.995,61.11,36.84,4.419
+Scheme 3 (Tri-Split Block Validation),Transition 2,PatchTST (Transformer),1.151,12.029999732971191,1.505,54.82,42.84,3.907
+Scheme 3 (Tri-Split Block Validation),Transition 2,Uni-LSTM + Attention (Causal),1.463,15.470000267028809,1.888,55.26,35.23,4.987
+Scheme 3 (Tri-Split Block Validation),Transition 2,Bi-LSTM + Attention (Retrospective),1.091,11.600000381469727,1.499,49.12,54.82,4.576
+Scheme 3 (Tri-Split Block Validation),Transition 2,LightGBM (Baseline Reference),0.797,8.64,1.053,51.75,61.84,3.091
+Scheme 3 (Tri-Split Block Validation),Transition 3,TCN (Causal),0.63,7.079999923706055,0.818,54.82,68.13,2.609
+Scheme 3 (Tri-Split Block Validation),Transition 3,PatchTST (Transformer),1.193,12.8100004196167,1.62,51.9,53.95,5.564
+Scheme 3 (Tri-Split Block Validation),Transition 3,Uni-LSTM + Attention (Causal),1.237,13.15999984741211,1.636,49.71,45.18,4.497
+Scheme 3 (Tri-Split Block Validation),Transition 3,Bi-LSTM + Attention (Retrospective),0.89,9.5600004196167,1.177,49.12,62.57,3.637
+Scheme 3 (Tri-Split Block Validation),Transition 3,LightGBM (Baseline Reference),0.845,9.22,1.101,49.85,56.58,2.951
