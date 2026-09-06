@@ -66,6 +66,7 @@ class ShipmentOptimizeRequest(BaseModel):
     origin: str = Field(..., description="Overseas origin port")
     destination: str = Field(..., description="East Coast India destination port")
     cargo_volume_mt: Optional[float] = Field(75000.0, description="Cargo volume in Metric Tons (default: 75,000 MT)")
+    contract_duration: Optional[str] = Field("spot", description="Contract duration: 'spot' (single voyage), 'short_term_coa' (3 voyages), or 'medium_term_coa' (6-12 voyages)")
     as_of_date: Optional[str] = Field(None, description="Date for market features (YYYY-MM-DD). Defaults to latest.")
     custom_spot_rate: Optional[float] = Field(None, description="Optional spot freight rate override ($/MT)")
     custom_bunker_price: Optional[float] = Field(None, description="Optional bunker price override ($/MT)")
@@ -74,8 +75,9 @@ class ShipmentOptimizeRequest(BaseModel):
         json_schema_extra = {
             "example": {
                 "origin": "Gladstone",
-                "destination": "Haldia",
+                "destination": "Paradip",
                 "cargo_volume_mt": 75000.0,
+                "contract_duration": "short_term_coa",
                 "as_of_date": "2026-09-04"
             }
         }
@@ -193,8 +195,10 @@ def predict_freight(request: RouteForecastRequest):
 def optimize_shipment(request: ShipmentOptimizeRequest):
     """
     Full Decision Engine for a shipment:
-    - Recommends best vessel class (Handysize, Supramax, Panamax)
+    - Recommends best vessel class (Handysize, Supramax, Panamax, Capesize)
     - Recommends timing (FIX NOW vs HOLD)
+    - Evaluates contract duration (Spot vs Short-Term COA vs Medium-Term COA)
+    - Provides deadheading minimization and triangulated backhaul advisor
     - Computes exact 4 landed cost heads and dollar savings
     """
     try:
@@ -202,11 +206,57 @@ def optimize_shipment(request: ShipmentOptimizeRequest):
             origin=request.origin,
             destination=request.destination,
             cargo_volume_mt=request.cargo_volume_mt,
+            contract_duration=request.contract_duration,
             as_of_date=request.as_of_date,
             custom_spot_rate=request.custom_spot_rate,
             custom_bunker_price=request.custom_bunker_price
         )
         return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/master/ports")
+def get_master_ports():
+    """Returns infrastructure constraints (draft, LOA, beam, discharge rate) for all 6 East Coast ports."""
+    return {
+        "status": "success",
+        "ports": inference_service.ports_df.to_dict(orient="records")
+    }
+
+@app.get("/api/v1/master/routes")
+def get_master_routes():
+    """Returns nautical distances and trade lane info for all 5 origin nations and destination ports."""
+    return {
+        "status": "success",
+        "routes": inference_service.routes_df.to_dict(orient="records")
+    }
+
+@app.get("/api/v1/master/vessels")
+def get_master_vessels():
+    """Returns specifications for all 4 bulk vessel classes (Handysize, Supramax, Panamax, Capesize)."""
+    return {
+        "status": "success",
+        "vessels": inference_service.vessels_df.to_dict(orient="records")
+    }
+
+@app.post("/api/v1/optimize/deadheading")
+def optimize_deadheading(
+    origin: str = "Gladstone",
+    destination: str = "Paradip",
+    vessel_class: str = "Panamax",
+    cargo_volume_mt: float = 75000.0
+):
+    """
+    SIH Deliverable C: Deadheading & Alternative Employment Optimizer.
+    Evaluates empty ballast voyage waste and recommends triangulated return cargo (e.g. Iron Ore to China).
+    """
+    try:
+        return inference_service.calculate_deadheading_and_backhaul(
+            origin=origin,
+            destination=destination,
+            vessel_class=vessel_class,
+            cargo_volume_mt=cargo_volume_mt
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

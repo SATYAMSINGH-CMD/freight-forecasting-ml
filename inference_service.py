@@ -231,18 +231,113 @@ class FreightInferenceService:
             
         return res
 
+    def calculate_deadheading_and_backhaul(
+        self,
+        origin: str,
+        destination: str,
+        vessel_class: str = "Panamax",
+        cargo_volume_mt: float = 75000.0,
+        bunker_price_usd: float = 650.0
+    ) -> Dict[str, Any]:
+        """
+        SIH Problem Statement Deliverable C:
+        Idle Scenario & Deadheading Minimization Advisor.
+        Calculates deadheading ballast voyage waste vs. triangulated alternative employment backhaul.
+        """
+        v_matches = self.vessels_df[self.vessels_df["vessel_class"].str.lower() == vessel_class.lower()]
+        speed = float(v_matches.iloc[0]["speed_knots"]) if len(v_matches) > 0 else 12.5
+        fuel_burn = float(v_matches.iloc[0]["daily_fuel_burn_mt"]) if len(v_matches) > 0 else 28.0
+        
+        direct_ballast_nm = self.get_route_distance(origin, destination)
+        ballast_days = round(direct_ballast_nm / (speed * 24.0), 1)
+        wasted_fuel_burn_usd = round(ballast_days * fuel_burn * bunker_price_usd, 0)
+        
+        # Standard ballast bonus shipowners load into spot charters (~$1.80/MT)
+        ballast_bonus_penalty_usd = round(cargo_volume_mt * 1.80, 0)
+        
+        # Determine triangulated backhaul based on origin corridor
+        orig_lower = origin.lower()
+        if "gladstone" in orig_lower or "australia" in orig_lower:
+            backhaul_cargo = "Indian Iron Ore Pellets (Odisha Mining Corp / NMDC)"
+            backhaul_destination = "Qingdao, China"
+            backhaul_nm = 3200.0
+            reposition_nm = 2800.0
+            deadheading_saved_nm = direct_ballast_nm - reposition_nm
+            sail_discount_per_mt = 1.85
+        elif "taboneo" in orig_lower or "indonesia" in orig_lower:
+            backhaul_cargo = "Alumina / Steel Billets (Vizag Steel / Nalco)"
+            backhaul_destination = "Port Klang, Malaysia / Singapore"
+            backhaul_nm = 1450.0
+            reposition_nm = 800.0
+            deadheading_saved_nm = direct_ballast_nm - reposition_nm
+            sail_discount_per_mt = 1.40
+        elif "maputo" in orig_lower or "mozambique" in orig_lower:
+            backhaul_cargo = "Finished Steel Products / Agricultural Bulk"
+            backhaul_destination = "Mombasa, Kenya / Dar es Salaam, Tanzania"
+            backhaul_nm = 2700.0
+            reposition_nm = 1400.0
+            deadheading_saved_nm = direct_ballast_nm - reposition_nm
+            sail_discount_per_mt = 1.65
+        elif "vostochny" in orig_lower or "russia" in orig_lower:
+            backhaul_cargo = "Indian Ilmenite / Bauxite"
+            backhaul_destination = "Busan, South Korea"
+            backhaul_nm = 3600.0
+            reposition_nm = 550.0
+            deadheading_saved_nm = direct_ballast_nm - reposition_nm
+            sail_discount_per_mt = 2.10
+        else:
+            backhaul_cargo = "Indian Iron Ore Fines"
+            backhaul_destination = "East Asia Hub (Qingdao)"
+            backhaul_nm = 3200.0
+            reposition_nm = 2500.0
+            deadheading_saved_nm = max(500.0, direct_ballast_nm - reposition_nm)
+            sail_discount_per_mt = 1.75
+            
+        total_sail_backhaul_rebate_usd = round(cargo_volume_mt * sail_discount_per_mt, 0)
+        
+        return {
+            "status": "success",
+            "vessel_class": vessel_class,
+            "cargo_volume_mt": cargo_volume_mt,
+            "baseline_deadheading_scenario": {
+                "unladen_ballast_route": f"{destination} -> {origin} (Empty Steaming)",
+                "empty_steaming_distance_nm": direct_ballast_nm,
+                "ballast_transit_days": ballast_days,
+                "unproductive_fuel_burn_usd": wasted_fuel_burn_usd,
+                "ballast_bonus_penalty_charged_to_sail_usd": ballast_bonus_penalty_usd,
+                "environmental_co2_waste_mt": round(ballast_days * fuel_burn * 3.114, 1)
+            },
+            "triangulated_backhaul_opportunity": {
+                "alternative_employment": f"Load {backhaul_cargo} at {destination} for export to {backhaul_destination}",
+                "laden_backhaul_distance_nm": backhaul_nm,
+                "shortened_repositioning_ballast_nm": reposition_nm,
+                "deadheading_distance_eliminated_nm": max(0.0, deadheading_saved_nm),
+                "deadheading_reduction_percent": round(max(0.0, deadheading_saved_nm) / direct_ballast_nm * 100.0, 1),
+                "sail_negotiated_freight_rebate_per_mt": sail_discount_per_mt,
+                "estimated_voyage_savings_for_sail_usd": total_sail_backhaul_rebate_usd,
+                "charter_contract_clause_recommendation": (
+                    f"Incorporate a Triangulated Backhaul Clause: Shipowner commits {vessel_class} to "
+                    f"{backhaul_cargo} loading at {destination} destined for {backhaul_destination}. "
+                    f"In exchange, SAIL deducts ${sail_discount_per_mt:.2f}/MT from inbound freight, "
+                    f"saving ${total_sail_backhaul_rebate_usd:,.0f} per voyage while eliminating empty deadheading."
+                )
+            }
+        }
+
     def optimize_shipment(
         self,
         origin: str = "Gladstone",
         destination: str = "Haldia",
         cargo_volume_mt: Optional[float] = None,
+        contract_duration: str = "spot",
         as_of_date: Optional[str] = None,
         custom_spot_rate: Optional[float] = None,
         custom_bunker_price: Optional[float] = None
     ) -> Dict[str, Any]:
         """
         Complete end-to-end decision engine for the backend:
-        Calculates 4 cost heads for all vessels, compares FIX NOW vs HOLD, and returns winning recommendation.
+        Calculates 4 cost heads for all vessels, evaluates contract modes (Spot vs Short-Term COA vs Medium-Term COA),
+        compares FIX NOW vs HOLD, and advises on deadheading/backhaul optimization.
         """
         route_data = self.predict_route_freight(origin, destination, as_of_date, custom_spot_rate, custom_bunker_price)
         dist = route_data["nautical_distance_nm"]
@@ -251,6 +346,17 @@ class FreightInferenceService:
         p10_rate = route_data["forward_15d_forecast"]["optimistic_p10_usd_mt"]
         p90_rate = route_data["forward_15d_forecast"]["pessimistic_p90_usd_mt"]
         bunker_price = route_data["current_market"]["bunker_fuel_price_usd_mt"]
+        
+        # Contract duration discount & multi-voyage structuring
+        contract_modes = {
+            "spot": {"name": "Single Spot Voyage", "voyages": 1, "discount_pct": 0.0, "description": "Single voyage prompt fixture subject to immediate spot volatility."},
+            "short_term_coa": {"name": "Short-Term COA (3 Voyages / ~90 Days)", "voyages": 3, "discount_pct": 3.5, "description": "Consecutive 3-voyage fixture securing guaranteed forward tonnage and volume discount."},
+            "medium_term_coa": {"name": "Medium-Term COA (6-12 Voyages / 1 Year)", "voyages": 6, "discount_pct": 6.0, "description": "Annual Contract of Affreightment (COA) locking in fixed procurement budgets."}
+        }
+        
+        mode_key = contract_duration.lower() if contract_duration.lower() in contract_modes else "spot"
+        mode_info = contract_modes[mode_key]
+        contract_disc_factor = 1.0 - (mode_info["discount_pct"] / 100.0)
         
         port_matches = self.ports_df[self.ports_df["port_name"].str.lower() == destination.lower()]
         if len(port_matches) > 0:
@@ -266,7 +372,8 @@ class FreightInferenceService:
             lightering_rate = 0.0
 
         vessel_options = ["Handysize", "Supramax", "Panamax"]
-        if destination.lower() in ["vizag", "dhamra"]:
+        # Gangavaram (19.5m), Dhamra (18.0m), Vizag (17.5m) can accommodate Capesize
+        if destination.lower() in ["vizag", "dhamra", "gangavaram"]:
             vessel_options.append("Capesize")
 
         vessel_evaluations = []
@@ -289,7 +396,7 @@ class FreightInferenceService:
             laytime = capacity / discharge_rate
             demurrage_cost = max(0.0, avg_wait_days - laytime) * demurrage_day
             
-            # Lightering at Haldia
+            # Lightering at shallow ports
             lightered_mt = 0.0
             lightering_cost = 0.0
             if destination.lower() == "haldia" and laden_draft > port_draft:
@@ -297,14 +404,14 @@ class FreightInferenceService:
                 lightered_mt = min(capacity * 0.50, capacity * (draft_excess / laden_draft) * 1.15)
                 lightering_cost = lightered_mt * lightering_rate
                 
-            # Landed Cost FIX NOW
-            eff_spot_rate = spot_rate * scale_fac
+            # Landed Cost FIX NOW with contract discount
+            eff_spot_rate = spot_rate * scale_fac * contract_disc_factor
             base_freight_now = capacity * eff_spot_rate
             total_now = base_freight_now + bunker_cost + demurrage_cost + lightering_cost
             cost_per_mt_now = total_now / capacity
             
-            # Landed Cost HOLD 15D (P50)
-            eff_p50_rate = p50_rate * scale_fac
+            # Landed Cost HOLD 15D (P50) with contract discount
+            eff_p50_rate = p50_rate * scale_fac * contract_disc_factor
             base_freight_hold = capacity * eff_p50_rate
             total_hold = base_freight_hold + bunker_cost + demurrage_cost + lightering_cost
             cost_per_mt_hold = total_hold / capacity
@@ -318,6 +425,7 @@ class FreightInferenceService:
                 "vessel_class": v,
                 "capacity_mt": capacity,
                 "sea_transit_days": round(sea_days, 1),
+                "port_draft_compatibility": "Fully Compatible" if laden_draft <= port_draft else f"Draft Exceeded ({laden_draft}m vs {port_draft}m max)",
                 "is_lightered_at_port": destination.lower() == "haldia" and laden_draft > port_draft,
                 "lightered_cargo_mt": round(lightered_mt, 0),
                 "cost_heads_breakdown_usd": {
@@ -344,10 +452,29 @@ class FreightInferenceService:
             f"FIX NOW: Spot freight is cheaper than the forward forecast. Lock in charter today to avoid market surge."
         )
 
+        # Compute deadheading optimization for the winning vessel
+        deadheading_advisor = self.calculate_deadheading_and_backhaul(
+            origin=origin,
+            destination=destination,
+            vessel_class=best_vessel["vessel_class"],
+            cargo_volume_mt=best_vessel["capacity_mt"],
+            bunker_price_usd=bunker_price
+        )
+
+        multi_voyage_savings = best_vessel["capacity_mt"] * (mode_info["discount_pct"] / 100.0) * spot_rate * mode_info["voyages"]
+
         return {
             "status": "success",
             "as_of_date": route_data["as_of_date"],
             "corridor": f"{origin} -> {destination} ({dist} NM)",
+            "contract_mode": {
+                "selected_duration": mode_info["name"],
+                "number_of_voyages": mode_info["voyages"],
+                "volume_discount_percent": mode_info["discount_pct"],
+                "total_contract_cargo_mt": best_vessel["capacity_mt"] * mode_info["voyages"],
+                "total_contract_discount_savings_usd": round(multi_voyage_savings, 0),
+                "strategic_advantage": mode_info["description"]
+            },
             "market_summary": route_data["current_market"],
             "ml_forecast": route_data["forward_15d_forecast"],
             "optimal_charter_decision": {
@@ -359,18 +486,21 @@ class FreightInferenceService:
                 "expected_net_savings_usd": round(best_vessel["expected_savings_if_holding_usd"], 0),
                 "executive_rationale": recommendation_text
             },
+            "deadheading_and_backhaul_advisory": deadheading_advisor["triangulated_backhaul_opportunity"],
             "all_vessel_comparisons": vessel_evaluations
         }
 
 if __name__ == "__main__":
     service = FreightInferenceService()
     print("Testing direct route prediction:")
-    res1 = service.predict_route_freight("Gladstone", "Haldia")
+    res1 = service.predict_route_freight("Maputo", "Gangavaram")
     print(res1)
     
-    print("\nTesting full shipment optimization:")
-    res2 = service.optimize_shipment("Gladstone", "Haldia")
+    print("\nTesting full shipment optimization with COA and Deadheading:")
+    res2 = service.optimize_shipment("Gladstone", "Paradip", contract_duration="short_term_coa")
     print(f"Optimal Action: {res2['optimal_charter_decision']['action']}")
     print(f"Recommended Vessel: {res2['optimal_charter_decision']['recommended_vessel_class']}")
-    print(f"Landed Cost $/MT: ${res2['optimal_charter_decision']['optimal_landed_cost_per_mt']}")
-    print(f"Expected Savings: ${res2['optimal_charter_decision']['expected_net_savings_usd']:,.0f}")
+    print(f"Contract Mode: {res2['contract_mode']['selected_duration']}")
+    print(f"Backhaul Cargo: {res2['deadheading_and_backhaul_advisory']['alternative_employment']}")
+    print(f"Sail Freight Rebate: ${res2['deadheading_and_backhaul_advisory']['sail_negotiated_freight_rebate_per_mt']}/MT")
+
