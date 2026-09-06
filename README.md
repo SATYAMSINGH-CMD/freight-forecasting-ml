@@ -60,15 +60,16 @@ Evaluated across **411 untouched trading days** on the holdout test set (Dec 202
 
 ### Official Holdout Test Set Leaderboard (411 Out-of-Sample Days)
 
-| Rank | Model Architecture | Paradigm | MAE ($/MT) | MAPE (%) | RMSE ($/MT) | $R^2$ Score | Directional Accuracy (%) | Accuracy (±10%) | Latency (ms) |
-| :---: | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **🥇 1** | **Bi-LSTM + Temporal Attention** | **Deep Learning** | **`$0.473`** | **`5.52%`** | **`$0.655`** | **`0.8554`** | **`61.6%`** | **`79.8%`** | 0.06 ms |
-| **🥈 2** | **Hybrid Ensemble (50% DL + 50% XGB)** | **Ensemble** | **`$0.492`** | **`5.80%`** | **`$0.669`** | **`0.8489`** | **`58.6%`** | **`78.1%`** | 0.06 ms |
-| **🥉 3** | **Temporal Convolutional Network (TCN)** | **Deep Learning** | **`$0.527`** | **`6.25%`** | **`$0.677`** | **`0.8456`** | **`55.7%`** | **`78.6%`** | 0.07 ms |
-| 4 | **XGBoost Regressor** | Tree GBDT | `$0.536` | `6.40%` | `$0.718` | `0.8262` | `60.3%` | `75.4%` | 0.01 ms |
-| 5 | **PatchTST (Patch Transformer)** | Transformer | `$0.589` | `7.55%` | `$0.730` | `0.8206` | `56.2%` | `71.3%` | 0.01 ms |
-| 6 | **LightGBM Regressor** | Tree GBDT | `$0.619` | `7.27%` | `$0.799` | `0.7847` | `54.3%` | `72.8%` | 0.00 ms |
-| 7 | **N-HiTS** | Hierarchical DL | `$1.844` | `19.31%` | `$2.886` | `-1.8076` | `66.9%` | `51.1%` | 0.01 ms |
+| Rank | Model Architecture | Paradigm | Causality Guarantee | MAE ($/MT) | MAPE (%) | RMSE ($/MT) | $R^2$ Score | Directional Accuracy (%) | Accuracy (±10%) | Latency (ms) |
+| :---: | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **🥇 1** | **Temporal Convolutional Network (TCN)** | **Deep Learning** | **100% Strictly Causal** | **`$0.391`** | **`4.75%`** | **`$0.519`** | **`0.9091`** | **`65.7%`** | **`90.8%`** | 0.31 ms |
+| **🥈 2** | **Hybrid Ensemble (50% TCN + 50% XGB)** | **Ensemble** | **100% Strictly Causal** | **`$0.431`** | **`5.17%`** | **`$0.572`** | **`0.8898`** | **`67.2%`** | **`86.1%`** | 0.31 ms |
+| **🥉 3** | **Bi-LSTM + Temporal Attention** | **Deep Learning** | Retrospective (Hindsight) | **`$0.485`** | **`5.77%`** | **`$0.686`** | **`0.8414`** | **`61.8%`** | **`80.5%`** | 0.05 ms |
+| 4 | **PatchTST (Patch Transformer)** | Transformer | 100% Causal Masked | `$0.508` | `6.16%` | `$0.660` | `0.8534` | `60.3%` | `77.9%` | 0.01 ms |
+| 5 | **XGBoost Regressor** | Tree GBDT | 100% Strictly Causal | `$0.536` | `6.40%` | `$0.718` | `0.8262` | `60.3%` | `75.4%` | 0.00 ms |
+| 6 | **LightGBM Regressor** | Tree GBDT | 100% Strictly Causal | `$0.619` | `7.27%` | `$0.799` | `0.7847` | `54.3%` | `72.8%` | 0.01 ms |
+| 7 | **Uni-LSTM + Attention** | Deep Learning | 100% Strictly Causal | `$0.735` | `8.45%` | `$0.987` | `0.6718` | `52.5%` | `61.6%` | 0.03 ms |
+| 8 | **N-HiTS** | Hierarchical DL | Multi-Rate Pooling | `$1.591` | `17.01%` | `$2.391` | `-0.9267` | `67.2%` | `50.1%` | 0.00 ms |
 
 ![Multi-Model Test Forecast Overlay](test_set_multi_model_forecast.png)
 

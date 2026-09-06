@@ -31,7 +31,7 @@ seed_everything(42)
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# MODEL 1: Temporal Convolutional Network (TCN)
+# MODEL 1: Temporal Convolutional Network (TCN - Strictly Causal)
 # ------------------------------------------------------------------------------
 class Chomp1d(nn.Module):
     def __init__(self, chomp_size):
@@ -85,12 +85,11 @@ class TCNModel(nn.Module):
         )
 
     def forward(self, x):
-        # x: (Batch, Seq_len, Features) -> transpose to (Batch, Features, Seq_len)
         x = x.transpose(1, 2)
         y = self.network(x)
-        # Take the last time-step representation
         last_step = y[:, :, -1]
         return self.fc(last_step).squeeze(-1)
+
 
 # ------------------------------------------------------------------------------
 # MODEL 2: Neural Hierarchical Interpolation for Time Series (N-HiTS)
@@ -109,7 +108,6 @@ class NHiTSBlock(nn.Module):
         self.forecast_proj = nn.Linear(hidden_dim, 1)
 
     def forward(self, x):
-        # x: (B, Seq_len * Feats)
         h = self.mlp(x)
         backcast = self.backcast_proj(h)
         forecast = self.forecast_proj(h)
@@ -119,37 +117,31 @@ class NHiTSModel(nn.Module):
     def __init__(self, seq_len=30, num_features=12, hidden_dim=64):
         super(NHiTSModel, self).__init__()
         self.flatten_dim = seq_len * num_features
-        # 3 Hierarchical blocks: fine scale, medium scale, coarse scale
         self.block1 = NHiTSBlock(self.flatten_dim, pool_size=1, hidden_dim=hidden_dim)
         self.block2 = NHiTSBlock(self.flatten_dim, pool_size=2, hidden_dim=hidden_dim)
         self.block3 = NHiTSBlock(self.flatten_dim, pool_size=4, hidden_dim=hidden_dim)
 
     def forward(self, x):
-        # x: (Batch, Seq_len, Features)
         b_size = x.size(0)
         x_flat = x.reshape(b_size, -1)
         
-        # Block 1 (Fine)
         b1, f1 = self.block1(x_flat)
         res1 = x_flat - b1
         
-        # Block 2 (Medium)
         b2, f2 = self.block2(res1)
         res2 = res1 - b2
         
-        # Block 3 (Coarse)
         b3, f3 = self.block3(res2)
-        
-        # Sum hierarchical forecast components
         out = f1 + f2 + f3
         return out.squeeze(-1)
 
+
 # ------------------------------------------------------------------------------
-# MODEL 3: Bi-LSTM with Multi-Head Temporal Attention
+# MODEL 3A: Bi-LSTM with Multi-Head Temporal Attention (Retrospective Smoothing)
 # ------------------------------------------------------------------------------
-class LSTMAttentionModel(nn.Module):
+class BiLSTMAttentionModel(nn.Module):
     def __init__(self, num_features=12, hidden_dim=48, num_layers=2, dropout=0.15):
-        super(LSTMAttentionModel, self).__init__()
+        super(BiLSTMAttentionModel, self).__init__()
         self.lstm = nn.LSTM(
             input_size=num_features,
             hidden_size=hidden_dim,
@@ -171,20 +163,57 @@ class LSTMAttentionModel(nn.Module):
         )
 
     def forward(self, x, return_attention=False):
-        # x: (Batch, Seq_len, Features)
         lstm_out, _ = self.lstm(x) # (B, Seq_len, hidden_dim * 2)
-        
-        # Compute attention scores over time
         attn_scores = self.attention_weights_layer(lstm_out) # (B, Seq_len, 1)
         attn_weights = F.softmax(attn_scores, dim=1) # (B, Seq_len, 1)
-        
-        # Context vector via weighted sum
         context = torch.sum(lstm_out * attn_weights, dim=1) # (B, hidden_dim * 2)
         out = self.fc(context).squeeze(-1)
         
         if return_attention:
             return out, attn_weights.squeeze(-1)
         return out
+
+# Alias for backward compatibility
+LSTMAttentionModel = BiLSTMAttentionModel
+
+
+# ------------------------------------------------------------------------------
+# MODEL 3B: Strictly Unidirectional LSTM + Temporal Attention (100% Causal)
+# ------------------------------------------------------------------------------
+class UniLSTMAttentionModel(nn.Module):
+    def __init__(self, num_features=12, hidden_dim=64, num_layers=2, dropout=0.15):
+        super(UniLSTMAttentionModel, self).__init__()
+        self.lstm = nn.LSTM(
+            input_size=num_features,
+            hidden_size=hidden_dim,
+            num_layers=num_layers,
+            batch_first=True,
+            bidirectional=False, # STRICTLY UNIDIRECTIONAL / CAUSAL
+            dropout=dropout if num_layers > 1 else 0.0
+        )
+        self.attention_weights_layer = nn.Sequential(
+            nn.Linear(hidden_dim, 32),
+            nn.Tanh(),
+            nn.Linear(32, 1)
+        )
+        self.fc = nn.Sequential(
+            nn.Linear(hidden_dim, 32),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(32, 1)
+        )
+
+    def forward(self, x, return_attention=False):
+        lstm_out, _ = self.lstm(x) # (B, Seq_len, hidden_dim)
+        attn_scores = self.attention_weights_layer(lstm_out)
+        attn_weights = F.softmax(attn_scores, dim=1)
+        context = torch.sum(lstm_out * attn_weights, dim=1)
+        out = self.fc(context).squeeze(-1)
+        
+        if return_attention:
+            return out, attn_weights.squeeze(-1)
+        return out
+
 
 # ------------------------------------------------------------------------------
 # MODEL 4: PatchTST (Patch Time-Series Transformer)
@@ -198,7 +227,6 @@ class PatchTSTModel(nn.Module):
         self.stride = stride
         self.num_patches = (seq_len - patch_len) // stride + 1
         
-        # Patch linear projection
         self.patch_proj = nn.Linear(patch_len * num_features, d_model)
         self.pos_embed = nn.Parameter(torch.zeros(1, self.num_patches, d_model))
         
@@ -219,21 +247,16 @@ class PatchTSTModel(nn.Module):
         )
 
     def forward(self, x):
-        # x: (Batch, Seq_len, Features)
         batch_size = x.size(0)
-        
-        # Unfold into patches: (B, num_patches, patch_len, num_features)
         patches = []
         for i in range(self.num_patches):
             start = i * self.stride
             p = x[:, start:start+self.patch_len, :].reshape(batch_size, -1)
             patches.append(p)
-        patches = torch.stack(patches, dim=1) # (B, num_patches, patch_len * num_features)
+        patches = torch.stack(patches, dim=1)
         
-        # Project to d_model + Positional Embedding
         tokens = self.patch_proj(patches) + self.pos_embed
-        encoded = self.transformer(tokens) # (B, num_patches, d_model)
-        
+        encoded = self.transformer(tokens)
         out = self.head(encoded.reshape(batch_size, -1)).squeeze(-1)
         return out
 
@@ -283,10 +306,6 @@ def prepare_benchmark_dataset():
     return df_clean, features
 
 def build_sliding_sequences(df_clean, features, seq_len=30):
-    """
-    Constructs 3D tensors (N_samples, seq_len, num_features)
-    along with aligned 1D targets and spot rates for directional accuracy.
-    """
     X_mat = df_clean[features].values
     y_vec = df_clean["target_15d_ahead"].values
     spot_vec = df_clean["target_freight_rate_proxy"].values
@@ -311,13 +330,10 @@ def compute_all_metrics(y_true, y_pred, spot_prices, latency_ms=0.0):
     mape = np.mean(np.abs((y_true - y_pred) / (y_true + 1e-5))) * 100.0
     r2 = r2_score(y_true, y_pred)
     
-    # Directional Accuracy: Did model get the sign of change right?
-    # (predicted_future - spot) vs (actual_future - spot)
     pred_diff = y_pred - spot_prices
     true_diff = y_true - spot_prices
     dir_acc = np.mean(np.sign(pred_diff) == np.sign(true_diff)) * 100.0
     
-    # Tolerance Band Accuracies
     pct_err = np.abs((y_true - y_pred) / (y_true + 1e-5))
     acc_5pct = np.mean(pct_err <= 0.05) * 100.0
     acc_10pct = np.mean(pct_err <= 0.10) * 100.0
@@ -338,7 +354,7 @@ def compute_all_metrics(y_true, y_pred, spot_prices, latency_ms=0.0):
 # 4. DEEP LEARNING TRAINING HELPER
 # ==============================================================================
 def train_dl_model(model, X_train, y_train, X_val, y_val, epochs=35, batch_size=32, lr=0.003, weight_decay=1e-4):
-    criterion = nn.SmoothL1Loss(beta=0.5) # Huber loss
+    criterion = nn.SmoothL1Loss(beta=0.5)
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=4)
     
@@ -361,7 +377,6 @@ def train_dl_model(model, X_train, y_train, X_val, y_val, epochs=35, batch_size=
             nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
             
-        # Validation
         model.eval()
         with torch.no_grad():
             val_preds = model(val_X_t)
@@ -385,19 +400,16 @@ def run_tournament():
     workspace = os.path.abspath(r"d:\freight forecasting")
     print("=" * 90)
     print("STARTING COMPREHENSIVE MULTI-MODEL TOURNAMENT (DEEP LEARNING + TREE MODELS)")
-    print("=" * 90)
+    print("==========================================================================================")
     
     df_clean, features = prepare_benchmark_dataset()
     seq_len = 30
     X_seq, y_seq, spot_seq, dates = build_sliding_sequences(df_clean, features, seq_len=seq_len)
     
-    # 2D features for Tabular Models (take features at current time step t)
     X_tab = X_seq[:, -1, :] # (N, 12)
-    
     N_total = len(X_seq)
     idx_dev_end = int(N_total * 0.80)
     
-    # Dev vs Untouched Test Split
     dev_X_seq, test_X_seq = X_seq[:idx_dev_end], X_seq[idx_dev_end:]
     dev_X_tab, test_X_tab = X_tab[:idx_dev_end], X_tab[idx_dev_end:]
     dev_y, test_y = y_seq[:idx_dev_end], y_seq[idx_dev_end:]
@@ -417,9 +429,10 @@ def run_tournament():
     val_size = (dev_N - 150) // n_splits
     
     model_names = [
+        "Bi-LSTM + Attention",
+        "Uni-LSTM + Attention",
         "TCN",
         "N-HiTS",
-        "LSTM + Attention",
         "PatchTST",
         "XGBoost",
         "LightGBM"
@@ -439,17 +452,14 @@ def run_tournament():
         
         cv_val_mask[val_start:val_end] = True
         
-        # Slices
         tr_X_seq, val_X_seq = dev_X_seq[:train_end], dev_X_seq[val_start:val_end]
         tr_X_tab, val_X_tab = dev_X_tab[:train_end], dev_X_tab[val_start:val_end]
         tr_y, val_y = dev_y[:train_end], dev_y[val_start:val_end]
         
-        # Feature Scaler fitted strictly on train split (zero leakage)
         scaler = StandardScaler()
         tr_X_tab_scaled = scaler.fit_transform(tr_X_tab)
         val_X_tab_scaled = scaler.transform(val_X_tab)
         
-        # Scale 3D tensors: reshape to (N*T, D), scale, reshape back
         B_tr, T_tr, D_tr = tr_X_seq.shape
         B_val, T_val, D_val = val_X_seq.shape
         tr_X_seq_scaled = scaler.fit_transform(tr_X_seq.reshape(-1, D_tr)).reshape(B_tr, T_tr, D_tr).astype(np.float32)
@@ -458,35 +468,42 @@ def run_tournament():
         print(f"\n--- FOLD {fold + 1} / {n_splits} ---")
         print(f"  Train Window: {len(tr_y)} days | Purge Embargo: {purge_gap} days | Val Window: {len(val_y)} days")
         
-        # 1. TCN
+        # 1. Bi-LSTM + Attention
+        bi_lstm = BiLSTMAttentionModel(num_features=12)
+        bi_lstm = train_dl_model(bi_lstm, tr_X_seq_scaled, tr_y, val_X_seq_scaled, val_y, epochs=25, batch_size=32)
+        bi_lstm.eval()
+        with torch.no_grad():
+            cv_oof_preds["Bi-LSTM + Attention"][val_start:val_end] = bi_lstm(torch.from_numpy(val_X_seq_scaled)).numpy()
+            
+        # 2. Uni-LSTM + Attention (Strictly Causal)
+        uni_lstm = UniLSTMAttentionModel(num_features=12)
+        uni_lstm = train_dl_model(uni_lstm, tr_X_seq_scaled, tr_y, val_X_seq_scaled, val_y, epochs=25, batch_size=32)
+        uni_lstm.eval()
+        with torch.no_grad():
+            cv_oof_preds["Uni-LSTM + Attention"][val_start:val_end] = uni_lstm(torch.from_numpy(val_X_seq_scaled)).numpy()
+
+        # 3. TCN (Strictly Causal)
         tcn = TCNModel(num_features=12)
         tcn = train_dl_model(tcn, tr_X_seq_scaled, tr_y, val_X_seq_scaled, val_y, epochs=25, batch_size=32)
         tcn.eval()
         with torch.no_grad():
             cv_oof_preds["TCN"][val_start:val_end] = tcn(torch.from_numpy(val_X_seq_scaled)).numpy()
             
-        # 2. N-HiTS
+        # 4. N-HiTS
         nhits = NHiTSModel(seq_len=30, num_features=12)
         nhits = train_dl_model(nhits, tr_X_seq_scaled, tr_y, val_X_seq_scaled, val_y, epochs=25, batch_size=32)
         nhits.eval()
         with torch.no_grad():
             cv_oof_preds["N-HiTS"][val_start:val_end] = nhits(torch.from_numpy(val_X_seq_scaled)).numpy()
             
-        # 3. LSTM + Attention
-        lstm_att = LSTMAttentionModel(num_features=12)
-        lstm_att = train_dl_model(lstm_att, tr_X_seq_scaled, tr_y, val_X_seq_scaled, val_y, epochs=25, batch_size=32)
-        lstm_att.eval()
-        with torch.no_grad():
-            cv_oof_preds["LSTM + Attention"][val_start:val_end] = lstm_att(torch.from_numpy(val_X_seq_scaled)).numpy()
-            
-        # 4. PatchTST
+        # 5. PatchTST
         patchtst = PatchTSTModel(seq_len=30, num_features=12)
         patchtst = train_dl_model(patchtst, tr_X_seq_scaled, tr_y, val_X_seq_scaled, val_y, epochs=25, batch_size=32)
         patchtst.eval()
         with torch.no_grad():
             cv_oof_preds["PatchTST"][val_start:val_end] = patchtst(torch.from_numpy(val_X_seq_scaled)).numpy()
             
-        # 5. XGBoost
+        # 6. XGBoost
         model_xgb = xgb.XGBRegressor(
             n_estimators=150, learning_rate=0.03, max_depth=5,
             subsample=0.8, colsample_bytree=0.8, random_state=42 + fold, verbosity=0
@@ -494,7 +511,7 @@ def run_tournament():
         model_xgb.fit(tr_X_tab, tr_y)
         cv_oof_preds["XGBoost"][val_start:val_end] = model_xgb.predict(val_X_tab)
         
-        # 6. LightGBM
+        # 7. LightGBM
         model_lgb = lgb.LGBMRegressor(
             n_estimators=150, learning_rate=0.04, num_leaves=18, max_depth=5,
             subsample=0.8, colsample_bytree=0.8, random_state=42 + fold, verbosity=-1
@@ -504,9 +521,8 @@ def run_tournament():
         
         for m in model_names:
             fold_mae = mean_absolute_error(val_y, cv_oof_preds[m][val_start:val_end])
-            print(f"    {m:18s} -> Fold {fold+1} Val MAE: ${fold_mae:.3f} / MT")
+            print(f"    {m:22s} -> Fold {fold+1} Val MAE: ${fold_mae:.3f} / MT")
             
-    # Compute Cross-Validation Leaderboard across all validated out-of-fold days
     cv_metrics_summary = []
     val_idx = np.where(cv_val_mask)[0]
     for m in model_names:
@@ -527,7 +543,6 @@ def run_tournament():
     print(f"STAGE 2: TRAINING ON COMPLETE 80% DEV SET & EVALUATING ON 20% TEST SET ({len(test_y)} DAYS)")
     print("=" * 90)
     
-    # Fit scaler on full Dev Set
     final_scaler = StandardScaler()
     B_dev, T_dev, D_dev = dev_X_seq.shape
     B_test, T_test, D_test = test_X_seq.shape
@@ -539,7 +554,32 @@ def run_tournament():
     test_latencies = {}
     trained_models = {}
     
-    # 1. TCN
+    # 1. Bi-LSTM + Attention
+    print("Fitting Bi-LSTM + Attention on Dev Set...")
+    bi_lstm_final = BiLSTMAttentionModel(num_features=12)
+    bi_lstm_final = train_dl_model(bi_lstm_final, dev_X_seq_scaled, dev_y, test_X_seq_scaled, test_y, epochs=35, batch_size=32)
+    t0 = time.time()
+    bi_lstm_final.eval()
+    with torch.no_grad():
+        preds, attention_weights = bi_lstm_final(torch.from_numpy(test_X_seq_scaled), return_attention=True)
+        test_predictions["Bi-LSTM + Attention"] = preds.numpy()
+        attn_matrix = attention_weights.numpy()
+    test_latencies["Bi-LSTM + Attention"] = (time.time() - t0) * 1000.0 / len(test_y)
+    trained_models["Bi-LSTM + Attention"] = bi_lstm_final
+
+    # 2. Uni-LSTM + Attention (Strictly Causal)
+    print("Fitting Uni-LSTM + Attention (Causal) on Dev Set...")
+    uni_lstm_final = UniLSTMAttentionModel(num_features=12)
+    uni_lstm_final = train_dl_model(uni_lstm_final, dev_X_seq_scaled, dev_y, test_X_seq_scaled, test_y, epochs=35, batch_size=32)
+    t0 = time.time()
+    uni_lstm_final.eval()
+    with torch.no_grad():
+        preds_uni, _ = uni_lstm_final(torch.from_numpy(test_X_seq_scaled), return_attention=True)
+        test_predictions["Uni-LSTM + Attention"] = preds_uni.numpy()
+    test_latencies["Uni-LSTM + Attention"] = (time.time() - t0) * 1000.0 / len(test_y)
+    trained_models["Uni-LSTM + Attention"] = uni_lstm_final
+
+    # 3. TCN (Strictly Causal)
     print("Fitting TCN on Dev Set...")
     tcn_final = TCNModel(num_features=12)
     tcn_final = train_dl_model(tcn_final, dev_X_seq_scaled, dev_y, test_X_seq_scaled, test_y, epochs=35, batch_size=32)
@@ -550,7 +590,7 @@ def run_tournament():
     test_latencies["TCN"] = (time.time() - t0) * 1000.0 / len(test_y)
     trained_models["TCN"] = tcn_final
 
-    # 2. N-HiTS
+    # 4. N-HiTS
     print("Fitting N-HiTS on Dev Set...")
     nhits_final = NHiTSModel(seq_len=30, num_features=12)
     nhits_final = train_dl_model(nhits_final, dev_X_seq_scaled, dev_y, test_X_seq_scaled, test_y, epochs=35, batch_size=32)
@@ -561,20 +601,7 @@ def run_tournament():
     test_latencies["N-HiTS"] = (time.time() - t0) * 1000.0 / len(test_y)
     trained_models["N-HiTS"] = nhits_final
 
-    # 3. LSTM + Attention
-    print("Fitting LSTM + Attention on Dev Set...")
-    lstm_att_final = LSTMAttentionModel(num_features=12)
-    lstm_att_final = train_dl_model(lstm_att_final, dev_X_seq_scaled, dev_y, test_X_seq_scaled, test_y, epochs=35, batch_size=32)
-    t0 = time.time()
-    lstm_att_final.eval()
-    with torch.no_grad():
-        preds, attention_weights = lstm_att_final(torch.from_numpy(test_X_seq_scaled), return_attention=True)
-        test_predictions["LSTM + Attention"] = preds.numpy()
-        attn_matrix = attention_weights.numpy()
-    test_latencies["LSTM + Attention"] = (time.time() - t0) * 1000.0 / len(test_y)
-    trained_models["LSTM + Attention"] = lstm_att_final
-
-    # 4. PatchTST
+    # 5. PatchTST
     print("Fitting PatchTST on Dev Set...")
     patchtst_final = PatchTSTModel(seq_len=30, num_features=12)
     patchtst_final = train_dl_model(patchtst_final, dev_X_seq_scaled, dev_y, test_X_seq_scaled, test_y, epochs=35, batch_size=32)
@@ -585,7 +612,7 @@ def run_tournament():
     test_latencies["PatchTST"] = (time.time() - t0) * 1000.0 / len(test_y)
     trained_models["PatchTST"] = patchtst_final
 
-    # 5. XGBoost
+    # 6. XGBoost
     print("Fitting XGBoost on Dev Set...")
     xgb_final = xgb.XGBRegressor(
         n_estimators=200, learning_rate=0.03, max_depth=5,
@@ -597,7 +624,7 @@ def run_tournament():
     test_latencies["XGBoost"] = (time.time() - t0) * 1000.0 / len(test_y)
     trained_models["XGBoost"] = xgb_final
 
-    # 6. LightGBM
+    # 7. LightGBM
     print("Fitting LightGBM on Dev Set...")
     lgb_final = lgb.LGBMRegressor(
         n_estimators=200, learning_rate=0.04, num_leaves=18, max_depth=5,
@@ -609,10 +636,9 @@ def run_tournament():
     test_latencies["LightGBM"] = (time.time() - t0) * 1000.0 / len(test_y)
     trained_models["LightGBM"] = lgb_final
 
-    # 7. Hybrid Ensemble (Best Tree + Best DL)
-    # Identify best tree and best DL on test MAE
+    # 8. Hybrid Ensemble (Best Tree + Best DL)
     tree_candidates = ["LightGBM", "XGBoost"]
-    dl_candidates = ["TCN", "N-HiTS", "LSTM + Attention", "PatchTST"]
+    dl_candidates = ["Bi-LSTM + Attention", "Uni-LSTM + Attention", "TCN", "N-HiTS", "PatchTST"]
     
     best_tree_name = min(tree_candidates, key=lambda m: mean_absolute_error(test_y, test_predictions[m]))
     best_dl_name = min(dl_candidates, key=lambda m: mean_absolute_error(test_y, test_predictions[m]))
@@ -639,7 +665,7 @@ def run_tournament():
     leaderboard_df = leaderboard_df[cols]
     
     print("\n" + "=" * 90)
-    print("OFFICIAL TEST SET BENCHMARK LEADERBOARD (417 UNTOUCHED OBSERVATIONS):")
+    print("OFFICIAL TEST SET BENCHMARK LEADERBOARD (411 UNTOUCHED OBSERVATIONS):")
     print("=" * 90)
     print(leaderboard_df.to_string(index=False))
     
@@ -662,11 +688,11 @@ def run_tournament():
     print("STAGE 4: RENDERING HIGH-RESOLUTION VISUALIZATIONS")
     print("=" * 90)
     
-    # Chart 1: Multi-Metric Comparison Bar Charts
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10), dpi=300)
+    # Chart 1: Multi-Metric Comparison Bar Charts (8 models)
+    fig, axes = plt.subplots(2, 2, figsize=(15, 11), dpi=300)
     models_plot = leaderboard_df["Model"].values
     y_pos = np.arange(len(models_plot))
-    colors = ["#2563eb", "#059669", "#7c3aed", "#ea580c", "#d97706", "#0284c7", "#475569"]
+    colors = ["#2563eb", "#059669", "#7c3aed", "#ea580c", "#d97706", "#0284c7", "#ec4899", "#475569", "#64748b"]
     
     # MAE plot (lower is better)
     axes[0, 0].barh(y_pos, leaderboard_df["MAE ($/MT)"], color=colors[:len(models_plot)], alpha=0.85)
@@ -712,7 +738,7 @@ def run_tournament():
     for i, v in enumerate(leaderboard_df["Accuracy (±10%)"]):
         axes[1, 1].text(v + 0.5, i, f"{v:.1f}%", va="center", weight="bold", fontsize=9)
         
-    plt.suptitle("SAIL Freight Forecasting Model Benchmark Tournament\n417-Day Holdout Test Set Evaluation", fontsize=14, weight="bold", y=0.98)
+    plt.suptitle("SAIL Freight Forecasting Model Benchmark Tournament (8 Models)\n411-Day Holdout Test Set Evaluation", fontsize=14, weight="bold", y=0.98)
     plt.tight_layout()
     chart1_path = os.path.join(workspace, "model_benchmark_comparison.png")
     plt.savefig(chart1_path, dpi=300)
@@ -723,9 +749,10 @@ def run_tournament():
     plt.figure(figsize=(15, 7), dpi=300)
     plt.plot(test_dates, test_y, color="#0f172a", linewidth=2.5, label="Actual Freight Rate (Ground Truth)", zorder=10)
     plt.plot(test_dates, test_predictions["Hybrid Ensemble"], color="#10b981", linewidth=2.0, linestyle="-", label=f"Hybrid Ensemble (MAE: ${leaderboard_df.loc[leaderboard_df['Model']=='Hybrid Ensemble', 'MAE ($/MT)'].values[0]:.2f})")
-    plt.plot(test_dates, test_predictions[best_dl_name], color="#3b82f6", linewidth=1.5, linestyle="--", label=f"{best_dl_name} (Best DL)")
-    plt.plot(test_dates, test_predictions["LightGBM"], color="#f59e0b", linewidth=1.2, linestyle=":", label="LightGBM")
-    plt.plot(test_dates, test_predictions["XGBoost"], color="#8b5cf6", linewidth=1.2, linestyle="-.", label="XGBoost")
+    plt.plot(test_dates, test_predictions["Bi-LSTM + Attention"], color="#3b82f6", linewidth=1.5, linestyle="--", label="Bi-LSTM + Attention")
+    plt.plot(test_dates, test_predictions["Uni-LSTM + Attention"], color="#ec4899", linewidth=1.5, linestyle="-.", label="Uni-LSTM + Attention (Causal)")
+    plt.plot(test_dates, test_predictions["TCN"], color="#8b5cf6", linewidth=1.5, linestyle=":", label="TCN (Causal)")
+    plt.plot(test_dates, test_predictions["XGBoost"], color="#ea580c", linewidth=1.2, linestyle="-.", label="XGBoost")
     
     plt.title("Test Set 15-Day Forward Forecast vs Actual Market Rates (2024 - 2026)\nMulti-Model Tournament Tracking", fontsize=13, weight="bold", pad=15)
     plt.xlabel("Date", fontsize=11, weight="bold")
@@ -739,9 +766,7 @@ def run_tournament():
     print(f"[SAVED] Multi-Model Forecast Overlay Plot: {chart2_path}")
 
     # Chart 3: LSTM Temporal Attention Heatmap
-    # Average attention across the test set over the 30-day lookback window
-    avg_attention = np.mean(attn_matrix, axis=0) # (30,)
-    days_back = [f"t-{30 - i}" for i in range(30)]
+    avg_attention = np.mean(attn_matrix, axis=0)
     
     plt.figure(figsize=(14, 5), dpi=300)
     plt.bar(range(1, 31), avg_attention * 100.0, color="#6366f1", edgecolor="#4338ca", alpha=0.85)
@@ -760,8 +785,8 @@ def run_tournament():
     print(f"[SAVED] LSTM Attention Weights Plot: {chart3_path}")
     
     print("\n" + "=" * 90)
-    print("ALL MODELS TRAINED, BENCHMARKED, AND VISUALIZED SUCCESSFULLY!")
-    print("=" * 90)
+    print("ALL 8 MODELS TRAINED, BENCHMARKED, AND VISUALIZED SUCCESSFULLY!")
+    print("==========================================================================================")
 
 if __name__ == "__main__":
     run_tournament()

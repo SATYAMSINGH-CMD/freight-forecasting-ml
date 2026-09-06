@@ -148,8 +148,9 @@ def health_check():
         "model_loaded": True,
         "deep_learning_loaded": inference_service.dl_model is not None,
         "features_count": len(inference_service.features),
-        "best_dl_test_mae": "$0.473 / MT",
-        "best_dl_test_mape": "5.52%",
+        "best_dl_model": "Temporal Convolutional Network (Causal TCN)",
+        "best_dl_test_mae": "$0.391 / MT",
+        "best_dl_test_mape": "4.75%",
         "test_mape_percent": 6.68,
         "uncertainty_cone_coverage": "99.8%"
     }
