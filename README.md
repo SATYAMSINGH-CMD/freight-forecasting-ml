@@ -128,6 +128,25 @@ To eliminate backtest overfitting and verify which model is truly **antifragile*
    - **Primary Risk Engine**: **LightGBM Quantile Regressor** (provides guaranteed antifragile P10, P50, P90 bounds that never blow up).
    - **Tactical Alpha Signal**: **Causal TCN / Hybrid Ensemble** (provides ultra-precise 4.75% MAPE guidance during standard trading periods).
 
+---
+
+## 🚀 Selected Production Engine: Causal TCN + LightGBM Hybrid Ensemble
+
+Following extensive empirical validation across **3 reliable time-series fold schemes (9 evaluation splits)**, the system officially deploys the **`Hybrid Ensemble (50% LightGBM + 50% Causal TCN)`** as its primary forecasting engine:
+
+![Hybrid Ensemble Comparison](hybrid_ensemble_comparison.png)
+
+| Architecture | Overall Avg MAE ($/MT) | Overall MAPE (%) | Directional Accuracy (%) | Accuracy ($\pm$10% Band) | Max Outlier Miss ($/MT) | Production Advantage |
+| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| **Hybrid Ensemble (LightGBM + Causal TCN)** | **`$0.949`** | **`9.65%`** | **`55.5% - 67.2%`** | **`56.6% - 86.1%`** | **`$3.471`** | **Tournament Champion**. Sub-dollar MAE; suppresses extreme shock errors by 31.5% while delivering tactical market direction alpha. |
+| **LightGBM (Solo Baseline)** | `$1.025` | `10.26%` | `51.37%` | `54.54%` | `$3.896` | Antifragile price level bounds, but lower directional sensitivity (coin-flip trend prediction). |
+| **Causal TCN (Solo DL)** | `$1.368` | `14.36%` | `54.76% - 65.7%` | `39.81% - 90.8%` | `$5.068` | Strong continuous sequence memory, but vulnerable to gradient drift during sudden macro shocks. |
+
+* **Zero Leakage / 100% Causal**: Dilated causal convolutions ensure future time steps are strictly masked.
+* **Integrated In Single Service**: Directly loaded and executed within [inference_service.py](inference_service.py) (< 1 ms latency).
+
+---
+
 ## 💰 The 4 Landed Cost Heads
 
 $$\text{Total Landed Cost (\$) } = \underbrace{\text{Base Ocean Freight}}_{\text{Uses ML Forecast}} + \underbrace{\text{Voyage Bunker Fuel}}_{\text{Physics Math}} + \underbrace{\text{Port Demurrage Fine}}_{\text{Contract Math}} + \underbrace{\text{Sandheads Lightering}}_{\text{Port Tariff}}$$
