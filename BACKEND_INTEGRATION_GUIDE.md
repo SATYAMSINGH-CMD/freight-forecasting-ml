@@ -25,23 +25,27 @@ result = service.optimize_shipment(origin="Gladstone", destination="Haldia")
 ## 2. The 3 Available Endpoints
 
 ### 🚢 Endpoint 1: Full Shipment Optimization (The Main Decision Engine)
-* **URL**: `POST /api/v1/predict/optimize`
-* **What it does**: Computes the 15-day forward freight rate, evaluates Handysize vs Supramax vs Panamax, calculates all 4 Landed Cost heads, and outputs the **`FIX NOW` vs `HOLD`** recommendation with projected dollar savings.
+* **URL**: `POST /api/v1/predict/optimize` (or alias `POST /api/v1/optimize/shipment`)
+* **What it does**: Computes the 15-day forward freight rate, evaluates Handysize vs Supramax vs Panamax vs Capesize, calculates all 4 Landed Cost heads, evaluates contract duration discounts, provides Deadheading / Alternative Employment savings, and outputs the **`FIX NOW` vs `HOLD`** recommendation with projected dollar savings.
 
-#### Request JSON:
+#### Request JSON (matches `src/api/client.js` in frontend):
 ```json
 {
   "origin": "Gladstone",
-  "destination": "Haldia",
+  "destination": "Vizag",
   "cargo_volume_mt": 75000.0,
+  "contract_mode": "spot",
+  "timeHorizon": "15D",
   "as_of_date": "2026-09-04",
   "custom_spot_rate": null,
   "custom_bunker_price": null
 }
 ```
-* `origin`: Overseas coal port (`Gladstone`, `Taboneo`, `Norfolk`, `Richards Bay`).
-* `destination`: East Coast India port (`Haldia`, `Paradip`, `Vizag`, `Dhamra`).
+* `origin`: Overseas coal port (`Gladstone`, `Taboneo`, `Norfolk`, `Maputo`, `Vostochny`).
+* `destination`: East Coast India port (`Vizag`, `Haldia`, `Paradip`, `Dhamra`, `Gangavaram`, `Gopalpur`). Supports full names or abbreviations (`visakhapatnam`, `vtz`, `hal`, etc.).
 * `cargo_volume_mt` *(optional, default 75000)*: Metric tons of cargo.
+* `contract_mode` *(optional, default 'spot')*: Contract duration: `'spot'` (1 voyage), `'short_term_coa'` (3 voyages, 3.5% discount), or `'medium_term_coa'` (6 voyages, 6.0% discount). Also accepts alias `'contract_duration'`.
+* `timeHorizon` *(optional, default '15D')*: Forecast lookahead window.
 * `as_of_date` *(optional)*: Historical date for market features (defaults to latest available trading day).
 * `custom_spot_rate` *(optional)*: Live override for today's spot freight rate ($/MT).
 * `custom_bunker_price` *(optional)*: Live override for marine fuel ($/MT).
@@ -51,85 +55,73 @@ result = service.optimize_shipment(origin="Gladstone", destination="Haldia")
 {
   "status": "success",
   "as_of_date": "2026-09-04",
-  "corridor": "Gladstone -> Haldia (5250.0 NM)",
+  "corridor": "Gladstone -> Vizag (4950.0 NM)",
+  "origin": "Gladstone",
+  "destination": "Vizag",
+  "contract_mode": "spot",
   "market_summary": {
-    "spot_freight_rate_usd_mt": 12.44,
+    "spot_freight_rate_usd_mt": 11.73,
     "bunker_fuel_price_usd_mt": 800.73,
-    "usd_inr_exchange_rate": 94.49
+    "usd_inr_exchange_rate": 94.49,
+    "contract_discount_pct": 0.0
   },
   "ml_forecast": {
-    "expected_p50_usd_mt": 10.19,
-    "optimistic_p10_usd_mt": 9.49,
-    "pessimistic_p90_usd_mt": 11.80,
-    "uncertainty_spread_usd_mt": 2.31,
-    "test_error_mape_percent": 6.68
+    "primary_production_model": "Hybrid Ensemble (50% LightGBM + 50% Causal TCN)",
+    "expected_p50_usd_mt": 10.40,
+    "hybrid_ensemble_usd_mt": 10.40,
+    "lightgbm_baseline_p50_usd_mt": 10.12,
+    "causal_tcn_p50_usd_mt": 10.68,
+    "optimistic_p10_usd_mt": 6.35,
+    "pessimistic_p90_usd_mt": 12.71,
+    "uncertainty_spread_usd_mt": 6.35,
+    "horizon_days": 15,
+    "test_error_mape_percent": 4.75
   },
   "optimal_charter_decision": {
     "action": "HOLD",
-    "recommended_vessel_class": "Panamax",
-    "target_cargo_volume_mt": 75000.0,
-    "optimal_landed_cost_per_mt": 18.75,
-    "projected_total_landed_cost_usd": 1406435.0,
-    "expected_net_savings_usd": 168750.0,
-    "executive_rationale": "HOLD: 15-day forward freight is projected to drop by $2.25/MT. Waiting 15 days yields an estimated procurement savings of $168,750 for SAIL."
+    "recommended_vessel_class": "Capesize",
+    "target_cargo_volume_mt": 160000.0,
+    "optimal_landed_cost_per_mt": 12.40,
+    "projected_total_landed_cost_usd": 1984211.0,
+    "expected_net_savings_usd": 174549.0,
+    "executive_rationale": "HOLD: 15-day forward freight is projected to drop by $1.33/MT. Waiting 15 days yields an estimated procurement savings of $174,549 for SAIL."
+  },
+  "deadhead_advisory": {
+    "recommendedRoute": "Vizag -> Paradip / Singapore -> East Asia",
+    "backhaulCommodity": "Indian Iron Ore Pellets (Odisha Mining Corp / NMDC)",
+    "ballastDistanceSavedNm": "2,150 NM",
+    "rebateEstimatedPerMt": 1.85,
+    "totalSavingsUsd": 296000.0,
+    "contractClause": "Incorporate a Triangulated Backhaul Clause: Shipowner commits Capesize to Indian Iron Ore Pellets loading at Vizag destined for Qingdao, China. In exchange, SAIL deducts $1.85/MT from inbound freight, saving $296,000 per voyage while eliminating empty deadheading."
   },
   "all_vessel_comparisons": [
     {
       "vessel_class": "Handysize",
       "capacity_mt": 35000.0,
-      "sea_transit_days": 17.5,
-      "is_lightered_at_port": true,
-      "lightered_cargo_mt": 6037.0,
-      "cost_heads_breakdown_usd": {
-        "ocean_freight": 544250.0,
-        "voyage_bunker_fuel": 252230.0,
-        "port_demurrage_penalty": 25333.0,
-        "sandheads_lightering": 42262.0
-      },
-      "total_landed_cost_now_usd": 864076.0,
       "landed_cost_now_per_mt": 24.69,
       "landed_cost_hold_p50_per_mt": 21.88,
       "expected_savings_if_holding_usd": 98438.0,
       "vessel_recommendation": "HOLD"
     },
     {
-      "vessel_class": "Supramax",
-      "capacity_mt": 55000.0,
-      "sea_transit_days": 17.5,
-      "is_lightered_at_port": true,
-      "lightered_cargo_mt": 21248.0,
-      "cost_heads_breakdown_usd": {
-        "ocean_freight": 752620.0,
-        "voyage_bunker_fuel": 336307.0,
-        "port_demurrage_penalty": 0.0,
-        "sandheads_lightering": 148736.0
-      },
-      "total_landed_cost_now_usd": 1237663.0,
-      "landed_cost_now_per_mt": 22.50,
-      "landed_cost_hold_p50_per_mt": 20.03,
-      "expected_savings_if_holding_usd": 136125.0,
-      "vessel_recommendation": "HOLD"
-    },
-    {
       "vessel_class": "Panamax",
       "capacity_mt": 75000.0,
-      "sea_transit_days": 17.5,
-      "is_lightered_at_port": true,
-      "lightered_cargo_mt": 35690.0,
-      "cost_heads_breakdown_usd": {
-        "ocean_freight": 933000.0,
-        "voyage_bunker_fuel": 392358.0,
-        "port_demurrage_penalty": 0.0,
-        "sandheads_lightering": 249828.0
-      },
-      "total_landed_cost_now_usd": 1575185.0,
       "landed_cost_now_per_mt": 21.00,
       "landed_cost_hold_p50_per_mt": 18.75,
       "expected_savings_if_holding_usd": 168750.0,
       "vessel_recommendation": "HOLD"
+    },
+    {
+      "vessel_class": "Capesize",
+      "capacity_mt": 160000.0,
+      "landed_cost_now_per_mt": 13.49,
+      "landed_cost_hold_p50_per_mt": 12.40,
+      "expected_savings_if_holding_usd": 174549.0,
+      "vessel_recommendation": "HOLD"
     }
   ]
 }
+```
 ```
 
 ---

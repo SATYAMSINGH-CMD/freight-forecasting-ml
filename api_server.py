@@ -66,7 +66,9 @@ class ShipmentOptimizeRequest(BaseModel):
     origin: str = Field(..., description="Overseas origin port")
     destination: str = Field(..., description="East Coast India destination port")
     cargo_volume_mt: Optional[float] = Field(75000.0, description="Cargo volume in Metric Tons (default: 75,000 MT)")
-    contract_duration: Optional[str] = Field("spot", description="Contract duration: 'spot' (single voyage), 'short_term_coa' (3 voyages), or 'medium_term_coa' (6-12 voyages)")
+    contract_mode: Optional[str] = Field(None, description="Contract mode: 'spot', 'short_term_coa', or 'medium_term_coa'")
+    contract_duration: Optional[str] = Field(None, description="Contract duration alias for contract_mode")
+    timeHorizon: Optional[str] = Field("15D", description="Forecasting lookahead horizon (e.g. '7D', '15D', '30D')")
     as_of_date: Optional[str] = Field(None, description="Date for market features (YYYY-MM-DD). Defaults to latest.")
     custom_spot_rate: Optional[float] = Field(None, description="Optional spot freight rate override ($/MT)")
     custom_bunker_price: Optional[float] = Field(None, description="Optional bunker price override ($/MT)")
@@ -75,10 +77,10 @@ class ShipmentOptimizeRequest(BaseModel):
         json_schema_extra = {
             "example": {
                 "origin": "Gladstone",
-                "destination": "Paradip",
+                "destination": "Vizag",
                 "cargo_volume_mt": 75000.0,
-                "contract_duration": "short_term_coa",
-                "as_of_date": "2026-09-04"
+                "contract_mode": "spot",
+                "timeHorizon": "15D"
             }
         }
 
@@ -192,6 +194,7 @@ def predict_freight(request: RouteForecastRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/v1/predict/optimize")
+@app.post("/api/v1/optimize/shipment")
 def optimize_shipment(request: ShipmentOptimizeRequest):
     """
     Full Decision Engine for a shipment:
@@ -201,12 +204,13 @@ def optimize_shipment(request: ShipmentOptimizeRequest):
     - Provides deadheading minimization and triangulated backhaul advisor
     - Computes exact 4 landed cost heads and dollar savings
     """
+    mode = request.contract_mode or request.contract_duration or "spot"
     try:
         result = inference_service.optimize_shipment(
             origin=request.origin,
             destination=request.destination,
             cargo_volume_mt=request.cargo_volume_mt,
-            contract_duration=request.contract_duration,
+            contract_duration=mode,
             as_of_date=request.as_of_date,
             custom_spot_rate=request.custom_spot_rate,
             custom_bunker_price=request.custom_bunker_price

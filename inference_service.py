@@ -11,6 +11,28 @@ import numpy as np
 import pandas as pd
 from typing import Dict, Any, Optional
 
+PORT_ALIASES = {
+    "visakhapatnam": "Vizag",
+    "vtz": "Vizag",
+    "vizag": "Vizag",
+    "haldia": "Haldia",
+    "hal": "Haldia",
+    "paradip": "Paradip",
+    "pdp": "Paradip",
+    "dhamra": "Dhamra",
+    "dhm": "Dhamra",
+    "gangavaram": "Gangavaram",
+    "ggv": "Gangavaram",
+    "gopalpur": "Gopalpur",
+    "gpl": "Gopalpur",
+}
+
+def normalize_port_name(port: str) -> str:
+    if not port or not isinstance(port, str):
+        return port
+    p_clean = port.strip().lower()
+    return PORT_ALIASES.get(p_clean, port.strip())
+
 class FreightInferenceService:
     def __init__(self, workspace_dir: Optional[str] = None):
         if workspace_dir is None:
@@ -59,6 +81,7 @@ class FreightInferenceService:
 
     def get_route_distance(self, origin: str, destination: str) -> float:
         """Fetch nautical distance between origin and destination ports."""
+        destination = normalize_port_name(destination)
         match = self.routes_df[
             (self.routes_df["origin_port"].str.lower() == origin.lower()) &
             (self.routes_df["destination_port"].str.lower() == destination.lower())
@@ -125,6 +148,7 @@ class FreightInferenceService:
         High-level route prediction: takes origin, destination, and optional date.
         Automatically engineers lag & rolling features from market data.
         """
+        destination = normalize_port_name(destination)
         if as_of_date is None:
             row_idx = len(self.market_df) - 1
         else:
@@ -254,6 +278,7 @@ class FreightInferenceService:
         Idle Scenario & Deadheading Minimization Advisor.
         Calculates deadheading ballast voyage waste vs. triangulated alternative employment backhaul.
         """
+        destination = normalize_port_name(destination)
         v_matches = self.vessels_df[self.vessels_df["vessel_class"].str.lower() == vessel_class.lower()]
         speed = float(v_matches.iloc[0]["speed_knots"]) if len(v_matches) > 0 else 12.5
         fuel_burn = float(v_matches.iloc[0]["daily_fuel_burn_mt"]) if len(v_matches) > 0 else 28.0
@@ -349,6 +374,7 @@ class FreightInferenceService:
         Calculates 4 cost heads for all vessels, evaluates contract modes (Spot vs Short-Term COA vs Medium-Term COA),
         compares FIX NOW vs HOLD, and advises on deadheading/backhaul optimization.
         """
+        destination = normalize_port_name(destination)
         route_data = self.predict_route_freight(origin, destination, as_of_date, custom_spot_rate, custom_bunker_price)
         dist = route_data["nautical_distance_nm"]
         spot_rate = route_data["current_market"]["spot_freight_rate_usd_mt"]
@@ -473,20 +499,34 @@ class FreightInferenceService:
 
         multi_voyage_savings = best_vessel["capacity_mt"] * (mode_info["discount_pct"] / 100.0) * spot_rate * mode_info["voyages"]
 
+        # 1. Market summary with contract discount percent for frontend
+        market_summary = dict(route_data["current_market"])
+        market_summary["contract_discount_pct"] = mode_info["discount_pct"]
+
+        # 2. ML forecast with horizon days for frontend
+        ml_forecast = dict(route_data["forward_15d_forecast"])
+        ml_forecast["horizon_days"] = 15
+
+        # 3. Clean deadhead advisory matching frontend client.js schema
+        backhaul_raw = deadheading_advisor["triangulated_backhaul_opportunity"]
+        deadhead_advisory_frontend = {
+            "recommendedRoute": f"{destination} -> Paradip / Singapore -> East Asia",
+            "backhaulCommodity": backhaul_raw["alternative_employment"].replace("Load ", "").split(" at ")[0],
+            "ballastDistanceSavedNm": f"{int(backhaul_raw['deadheading_distance_eliminated_nm']):,} NM",
+            "rebateEstimatedPerMt": backhaul_raw["sail_negotiated_freight_rebate_per_mt"],
+            "totalSavingsUsd": backhaul_raw["estimated_voyage_savings_for_sail_usd"],
+            "contractClause": backhaul_raw["charter_contract_clause_recommendation"]
+        }
+
         return {
             "status": "success",
             "as_of_date": route_data["as_of_date"],
             "corridor": f"{origin} -> {destination} ({dist} NM)",
-            "contract_mode": {
-                "selected_duration": mode_info["name"],
-                "number_of_voyages": mode_info["voyages"],
-                "volume_discount_percent": mode_info["discount_pct"],
-                "total_contract_cargo_mt": best_vessel["capacity_mt"] * mode_info["voyages"],
-                "total_contract_discount_savings_usd": round(multi_voyage_savings, 0),
-                "strategic_advantage": mode_info["description"]
-            },
-            "market_summary": route_data["current_market"],
-            "ml_forecast": route_data["forward_15d_forecast"],
+            "origin": origin,
+            "destination": destination,
+            "contract_mode": mode_key,
+            "market_summary": market_summary,
+            "ml_forecast": ml_forecast,
             "optimal_charter_decision": {
                 "action": overall_decision,
                 "recommended_vessel_class": best_vessel["vessel_class"],
@@ -496,8 +536,17 @@ class FreightInferenceService:
                 "expected_net_savings_usd": round(best_vessel["expected_savings_if_holding_usd"], 0),
                 "executive_rationale": recommendation_text
             },
-            "deadheading_and_backhaul_advisory": deadheading_advisor["triangulated_backhaul_opportunity"],
-            "all_vessel_comparisons": vessel_evaluations
+            "deadhead_advisory": deadhead_advisory_frontend,
+            "deadheading_and_backhaul_advisory": backhaul_raw,
+            "all_vessel_comparisons": vessel_evaluations,
+            "contract_mode_details": {
+                "selected_duration": mode_info["name"],
+                "number_of_voyages": mode_info["voyages"],
+                "volume_discount_percent": mode_info["discount_pct"],
+                "total_contract_cargo_mt": best_vessel["capacity_mt"] * mode_info["voyages"],
+                "total_contract_discount_savings_usd": round(multi_voyage_savings, 0),
+                "strategic_advantage": mode_info["description"]
+            }
         }
 
 if __name__ == "__main__":
